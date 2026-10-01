@@ -107,12 +107,9 @@ supabase/           config, migrations, seed, pgTAP tests
 tests/              unit and end-to-end tests
 ```
 
-## Deployment (Render)
+## Deployment
 
-- Web service: `npm ci && npm run build`, start with `npm run start`.
-- Cron job: `npm ci`, command `npm run ingest`.
-- Configure environment variables in Render. `SUPABASE_SERVICE_ROLE_KEY` belongs only to the cron job.
-- Apply migrations to the hosted project with `npx supabase link` and `npx supabase db push`.
+Supabase (database and auth) plus Render (web service and ingestion cron), described in `render.yaml`. Step-by-step guide: [docs/deployment.md](docs/deployment.md).
 
 ## Security
 

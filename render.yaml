@@ -1,0 +1,44 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Values marked `sync: false` are entered in the Render Dashboard when the
+# Blueprint is first created. Never put real values in this file.
+#
+# Node.js version comes from .nvmrc. devDependencies are needed at build time
+# (TypeScript) and by the ingestion job (tsx), hence --include=dev.
+
+services:
+  - type: web
+    name: rssdeck
+    runtime: node
+    plan: free
+    # Keep close to the Supabase project's region.
+    region: frankfurt
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start
+    # Public page that needs no session (the proxy redirects everything else).
+    healthCheckPath: /login
+    # Deploy only after GitHub Actions passes on main.
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+
+  - type: cron
+    name: rssdeck-ingest
+    runtime: node
+    # Cron jobs have no free plan; omitting `plan` selects the smallest one.
+    region: frankfurt
+    # Every 15 minutes. Feeds that are not yet due are skipped cheaply.
+    schedule: "*/15 * * * *"
+    buildCommand: npm ci --include=dev
+    startCommand: npm run ingest
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      # Bypasses RLS. Only this job gets it; the web service never does.
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
