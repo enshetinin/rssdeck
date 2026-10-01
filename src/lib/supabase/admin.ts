@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database";
 
-import { getSupabasePublicEnv } from "./env";
+import { getSupabaseUrl } from "./env";
 
 /**
  * Privileged Supabase client. BYPASSES ROW LEVEL SECURITY.
@@ -15,11 +15,15 @@ import { getSupabasePublicEnv } from "./env";
  * a Client Component fail the build.
  */
 export function createAdminClient() {
-  const { url } = getSupabasePublicEnv();
+  // Needs only the URL and the service-role key: the ingestion job is not
+  // given the publishable key (render.yaml).
+  const url = getSupabaseUrl();
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!serviceRoleKey) {
-    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY (server-only).");
+    throw new Error(
+      "Missing SUPABASE_SERVICE_ROLE_KEY (server-only). Locally, set it in .env.local; in production, on the Render cron job.",
+    );
   }
 
   return createClient<Database>(url, serviceRoleKey, {
