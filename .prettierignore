@@ -1,0 +1,11 @@
+.next/
+out/
+build/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+supabase/.temp/
+supabase/.branches/
+# Vendored verbatim from yev-design; keep byte-identical for easy updates.
+src/styles/yev/

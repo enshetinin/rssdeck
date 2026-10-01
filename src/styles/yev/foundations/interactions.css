@@ -1,0 +1,115 @@
+/* Yev Design — interactions
+   Shared state behavior. Accessibility first. Yev Signal is deliberately absent:
+   state is expressed through foreground ink, tint, underline and outline. */
+
+/* Focus — always visible, on both themes, on every element. Low specificity so
+   a project can restyle it, but it should be replaced by something at least as
+   visible. */
+:where(:focus-visible) {
+  outline: var(--yev-focus-width) solid var(--yev-focus);
+  outline-offset: var(--yev-focus-offset);
+}
+
+/* Selection — inverted foreground/background: maximum contrast in either theme. */
+::selection {
+  background: var(--yev-fg);
+  color: var(--yev-bg);
+}
+
+/* Placeholder is a hint, never a label; keep it legible. */
+:where(input, textarea)::placeholder {
+  color: var(--yev-muted);
+  opacity: 1;
+}
+
+/* Disabled — controls, and anything marked aria-disabled (which stays focusable).
+   Only the pointer cue is shared. How a disabled control looks (muted ink, a
+   dashed edge, a changed label) is a component decision: a global opacity would
+   stack on the component's own colours and undermine their contrast. */
+:where(button, input, select, textarea):disabled,
+:where([aria-disabled="true"]) {
+  cursor: not-allowed;
+}
+
+/* Hover and active for links. Hover is limited to devices that can hover, so
+   touch does not get stuck states. Feedback is thickness, not color. */
+@media (hover: hover) {
+  :where(a[href]:hover) {
+    text-decoration-thickness: max(2px, 0.14em);
+  }
+}
+
+:where(a[href]:active) {
+  text-decoration-thickness: max(3px, 0.2em);
+}
+
+/* State layer — opt in with .yev-interactive to give any element a tint on
+   hover and a stronger one while pressed, whatever its own background is.
+   (It uses background-image; an element with its own background-image should
+   set the layer itself.) */
+.yev-interactive {
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .yev-interactive:hover:not(:disabled, [aria-disabled="true"]) {
+    background-image: linear-gradient(var(--yev-wash), var(--yev-wash));
+  }
+}
+
+.yev-interactive:active:not(:disabled, [aria-disabled="true"]) {
+  background-image: linear-gradient(var(--yev-wash-strong), var(--yev-wash-strong));
+}
+
+/* Accessibility primitives -------------------------------------------------- */
+
+/* Visually hidden, still present for assistive technology. Never display:none
+   or visibility:hidden (both remove it from the accessibility tree). Clipped to
+   a 1px box rather than moved off-screen, so it causes no scroll or overflow in
+   either writing direction; nowrap stops screen readers from reading it word by
+   word. .yev-skip-link shares this state until it receives focus. */
+.yev-sr-only,
+.yev-skip-link:not(:focus) {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Skip link — first focusable element in <body>, pointing at the main landmark
+   (give it tabindex="-1" so focus follows the jump):
+
+     <a class="yev-skip-link" href="#main">Skip to content</a>
+     <main id="main" tabindex="-1">…</main>
+
+   Invisible until keyboard focus, then a solid foreground-on-background block
+   fixed to the top, aligned with the page margin (--yev-page-margin, the same
+   dial that positions .yev-frame content), so it reads the same over any
+   content in both themes. It stays an underlined link; the ring is the standard
+   focus outline with a background-colored gap so it holds up over anything
+   beneath. A shell without a page margin (an application rail, say) sets
+   inset-inline-start itself. */
+.yev-skip-link:focus {
+  position: fixed;
+  inset-block-start: var(--yev-space-3);
+  inset-inline-start: var(--yev-page-margin, var(--yev-space-4));
+  z-index: 1000;
+  padding: var(--yev-space-3) var(--yev-space-4);
+  background: var(--yev-fg);
+  color: var(--yev-bg);
+  outline-offset: var(--yev-focus-offset);
+  box-shadow: 0 0 0 var(--yev-focus-offset) var(--yev-bg);
+}
+
+/* Motion — transitions exist only when the user has no reduced-motion preference. */
+@media (prefers-reduced-motion: no-preference) {
+  :where(a[href]) {
+    transition: text-decoration-thickness var(--yev-motion-fast) ease-out;
+  }
+}

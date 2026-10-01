@@ -1,0 +1,112 @@
+/* Yev Design — reset
+   Restrained. Native semantics and behavior are kept: lists stay lists,
+   headings keep their weight until typography.css says otherwise, links stay
+   links. */
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-wrap: break-word;
+}
+
+body {
+  margin: 0;
+}
+
+/* Vertical spacing is composed (stack, prose, or explicit), not inherited from
+   the browser; typography.css only supplies fallbacks for the few elements that
+   would otherwise collapse. Inline margins are left alone. */
+:where(h1, h2, h3, h4, h5, h6, p, ul, ol, dl, dd, blockquote, figure, pre, hr) {
+  margin-block: 0;
+}
+
+/* Figure's default inline indent is not a useful behavior; layout places it. */
+:where(figure) {
+  margin-inline: 0;
+}
+
+/* Text wrapping */
+:where(h1, h2, h3, h4, h5, h6) {
+  text-wrap: balance;
+}
+
+:where(p, li, dd, blockquote, figcaption) {
+  text-wrap: pretty;
+}
+
+/* Media */
+:where(img, picture, video, canvas) {
+  display: block;
+  max-inline-size: 100%;
+}
+
+:where(img, video) {
+  block-size: auto;
+}
+
+:where(svg) {
+  max-inline-size: 100%;
+}
+
+/* Forms */
+:where(button, input, select, textarea) {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+:where(textarea) {
+  resize: vertical;
+}
+
+:where(fieldset) {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Tables */
+:where(table) {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* Lists opt out of markers with role="list" — this keeps them announced as
+   lists in Safari/VoiceOver, which drops the semantics otherwise. Use it only
+   on a list that is visually reset and must remain a list: above all unordered
+   navigation and group lists. Do not add it to an ordered list whose numbering
+   matters (steps, rankings): leave the native <ol> and its markers, and style
+   them with ::marker rather than replacing them with generated content. */
+:where(ul, ol)[role="list"] {
+  padding: 0;
+  list-style: none;
+}
+
+/* An author's display value must not un-hide [hidden]. */
+[hidden]:not([hidden="until-found"]) {
+  display: none !important;
+}
+
+/* Reduced motion: safety net for anything that slips through. Feedback must
+   not depend on movement. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

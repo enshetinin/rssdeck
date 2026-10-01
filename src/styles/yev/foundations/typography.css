@@ -1,0 +1,242 @@
+/* Yev Design — typography
+   Atkinson Hyperlegible Next is the functional base. Newsreader is opt-in.
+   Fonts are not loaded here; the project supplies @font-face or a font link.
+
+   Everything below the "dials" is built from these custom properties. A project
+   dialect overrides the dials, not the rules. Approximate H1 relationships:
+
+     identity      4–7× body   --yev-h1-size: clamp(3rem, 1rem + 9vw, 7rem);
+     reading       2–4× body   (roughly the default)
+     application   1.5–2.5×    --yev-h1-size: 1.75rem; --yev-h2-size: 1.375rem; …
+
+   Editorial serif for headings in any scope:
+     --yev-font-heading: var(--yev-font-serif);  --yev-heading-weight: 400;      */
+
+:root {
+  /* Dials: text sizes */
+  --yev-text-meta: 0.8125rem;
+  --yev-text-ui: 0.9375rem;
+  --yev-text-body: 1.0625rem;
+  --yev-text-lead: 1.375rem;
+
+  /* Dials: heading sizes. Fluid; rem-based so they still respond to zoom. */
+  --yev-h1-size: clamp(2rem, 1.25rem + 3vw, 3.5rem);
+  --yev-h2-size: clamp(1.625rem, 1.2rem + 1.6vw, 2.375rem);
+  --yev-h3-size: clamp(1.375rem, 1.15rem + 0.9vw, 1.75rem);
+  --yev-h4-size: 1.25rem;
+  --yev-h5-size: var(--yev-text-body);
+  --yev-h6-size: var(--yev-text-ui);
+
+  /* Dials: rhythm and roles */
+  --yev-leading-body: 1.6;
+  --yev-leading-tight: 1.15;
+  --yev-heading-weight: 500;
+  --yev-heading-leading: var(--yev-leading-tight);
+  --yev-heading-tracking: 0; /* neutral: display tracking is an identity decision */
+  --yev-font-body: var(--yev-font-sans);
+  --yev-font-heading: var(--yev-font-sans);
+}
+
+/* Body */
+body {
+  background: var(--yev-bg);
+  color: var(--yev-fg);
+  font-family: var(--yev-font-body);
+  font-size: var(--yev-text-body);
+  font-weight: 400;
+  line-height: var(--yev-leading-body);
+  font-kerning: normal;
+}
+
+/* Headings — relational, not a fixed scale. Level picks the size dial only. */
+:where(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--yev-font-heading);
+  font-weight: var(--yev-heading-weight);
+  line-height: var(--yev-heading-leading);
+  letter-spacing: var(--yev-heading-tracking);
+}
+
+:where(h1) {
+  font-size: var(--yev-h1-size);
+}
+
+:where(h2) {
+  font-size: var(--yev-h2-size);
+}
+
+:where(h3) {
+  font-size: var(--yev-h3-size);
+}
+
+:where(h4) {
+  font-size: var(--yev-h4-size);
+}
+
+:where(h5) {
+  font-size: var(--yev-h5-size);
+}
+
+:where(h6) {
+  font-size: var(--yev-h6-size);
+}
+
+/* Paragraph rhythm is the consuming context's (a gap, a stack, .yev-prose or a
+   project's own spacing): there is deliberately no p + p rule here. */
+:where(strong, b) {
+  font-weight: 600;
+}
+
+/* Links — always identifiable without color. Hover lives in interactions.css. */
+:where(a[href]) {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-thickness: max(1px, 0.075em);
+  text-underline-offset: 0.2em;
+}
+
+/* Lists — indented, unless the list opted out with role="list" (reset.css
+   clears those; this layer comes later and must not undo it). role="list" is
+   for visually reset lists that must stay lists, above all unordered
+   navigation and group lists; see reset.css. */
+:where(ul, ol):not([role="list"]) {
+  padding-inline-start: 1.5em;
+}
+
+:where(dd) {
+  margin-inline-start: 0;
+}
+
+/* Code — inline code, keys and sample output take the monospace face at a
+   size that sits with the text around them, and nothing else: no wash, no
+   padding, no chip. A tinted or bordered treatment is a dialect decision. */
+:where(code, kbd, samp, pre) {
+  font-family: var(--yev-font-mono);
+  font-size: 0.9em;
+}
+
+/* Pre is structural only: the monospace face above, tab size, and horizontal
+   overflow that scrolls inside the element instead of widening the page. There
+   is no background, padding or border: a code block's surface is a dialect or
+   component decision. A scrollable pre must be reachable by keyboard: give it
+   tabindex="0" and an accessible name (or a focusable scroll region). */
+:where(pre) {
+  line-height: 1.5;
+  tab-size: 2;
+  overflow-x: auto;
+}
+
+:where(pre code) {
+  font-size: inherit;
+}
+
+/* Tables — alignment and whitespace only. Rules, row separators and density
+   belong to the dialect (border collapse is in reset.css; wrap wide tables in
+   .yev-scroll). */
+:where(table) {
+  font-variant-numeric: tabular-nums;
+}
+
+:where(th, td) {
+  padding: var(--yev-space-2) var(--yev-space-4) var(--yev-space-2) 0;
+  text-align: start;
+  vertical-align: baseline;
+}
+
+:where(th) {
+  font-weight: 500;
+}
+
+:where(thead th) {
+  vertical-align: bottom;
+}
+
+/* Metadata. <small> is small print by definition. Captions are not assumed to
+   be: a table caption is often the table's title and a figure caption is often
+   ordinary prose, so figcaption and caption inherit size, colour and leading,
+   and dialects decide their visual role. */
+:where(small) {
+  font-size: var(--yev-text-meta);
+  line-height: 1.4;
+  color: var(--yev-muted);
+}
+
+/* Caption keeps only what is structural: UA centres it, which is never wanted
+   for a table title, and it needs air before the header row. */
+:where(caption) {
+  padding-block-end: var(--yev-space-2);
+  text-align: start;
+}
+
+:where(hr) {
+  border: 0;
+  border-block-start: 1px solid var(--yev-rule);
+}
+
+/* Fallbacks for content a project has not styled. The reset removes the
+   browser's block margins, so without these an unstyled blockquote, hr, h5 or
+   h6 sits flush against its neighbours. Written as adjacent-sibling top margins:
+   nothing is added above the first or below the last child, and .yev-stack,
+   .yev-prose or a project's own margins override them. They are margins, so
+   inside a container that spaces its children with `gap` they add to it; such
+   a container states margin-block-start: 0 for the children concerned. Later
+   rules win where they share a selector weight, so a heading straight after
+   another gets the larger gap. */
+:where(:is(h5, h6) + *) {
+  margin-block-start: 0.5em;
+}
+
+:where(* + :is(h5, h6)) {
+  margin-block-start: 1.5em;
+}
+
+:where(* + blockquote, blockquote + *) {
+  margin-block-start: 1.5em;
+}
+
+:where(* + hr, hr + *) {
+  margin-block-start: 2em;
+}
+
+/* Opt-in roles */
+.yev-meta {
+  font-size: var(--yev-text-meta);
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  color: var(--yev-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.yev-lead {
+  font-size: var(--yev-text-lead);
+  line-height: 1.4;
+}
+
+.yev-serif {
+  font-family: var(--yev-font-serif);
+}
+
+.yev-mono {
+  font-family: var(--yev-font-mono);
+}
+
+/* Reading flow: vertical rhythm for long-form content. Combine with
+   .yev-measure for line length. */
+.yev-prose > * + * {
+  margin-block-start: 1em;
+}
+
+.yev-prose > * + :is(h2, h3, h4) {
+  margin-block-start: 2em;
+}
+
+.yev-prose > :is(h1, h2, h3, h4, h5, h6) + * {
+  margin-block-start: 0.5em;
+}
+
+.yev-prose li + li {
+  margin-block-start: 0.35em;
+}
+
+.yev-prose li > :is(ul, ol) {
+  margin-block-start: 0.35em;
+}

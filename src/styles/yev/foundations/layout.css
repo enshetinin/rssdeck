@@ -1,0 +1,150 @@
+/* Yev Design — layout
+   Compositional primitives, not templates. Nothing here says "sidebar", "hero"
+   or "card". Asymmetry is chosen per project through spans and offsets.
+
+   The experimental .yev-grid collapses at a viewport media query of 48rem (rem,
+   so it also reflows with zoom). */
+
+:root {
+  --yev-gutter: clamp(1rem, 2.5vw, 2rem); /* between grid columns */
+  --yev-page-margin: clamp(1rem, 4vw, 3rem); /* between content and viewport edge */
+}
+
+/* Reading measure — left-aligned by default; centering is a project decision. */
+.yev-measure {
+  max-inline-size: var(--yev-measure);
+}
+
+/* Stack — vertical rhythm between siblings.
+   Set --yev-stack-gap per instance; nested stacks inherit it. */
+.yev-stack > * + * {
+  margin-block-start: var(--yev-stack-gap, var(--yev-space-5));
+}
+
+/* Cluster — wrapping row of items. */
+.yev-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: var(--yev-cluster-align, center);
+  justify-content: var(--yev-cluster-justify, flex-start);
+  gap: var(--yev-cluster-gap, var(--yev-space-3));
+}
+
+/* Frame — page margins and an optional maximum width. Set
+   --yev-frame-max: none for a fluid frame. */
+.yev-frame {
+  max-inline-size: var(--yev-frame-max, 90rem);
+  margin-inline: auto;
+  padding-inline: var(--yev-page-margin);
+}
+
+/* Scroll — contain overflow (wide tables, code) without breaking reflow. */
+.yev-scroll {
+  overflow-x: auto;
+}
+
+/* Grid — EXPERIMENTAL, and not core. A small 12-column helper that has not
+   survived contact with the dialects: a reading environment builds its own
+   subgrid and an identity surface its own 12 columns with a different
+   breakpoint. Its collapse point is a hard-coded 48rem (a media query cannot
+   read a custom property), so it cannot be dialled. It may change or go before
+   1.0; do not build on it. Composition stays a project decision.
+
+   Below the breakpoint everything is one column, in source order. Above it,
+   children default to a full row; place them with spans:
+
+     <div class="yev-grid">
+       <aside class="yev-span-3">…</aside>
+       <main class="yev-start-5 yev-span-7">…</main>
+     </div>
+
+   Or set --yev-start / --yev-span directly for one-off relationships. A start
+   without a span runs to the last column. */
+.yev-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: var(--yev-gutter);
+  row-gap: var(--yev-grid-row-gap, var(--yev-space-6));
+}
+
+@media (min-width: 48rem) {
+  .yev-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .yev-grid > * {
+    grid-column-start: var(--yev-start, auto);
+    grid-column-end: span var(--yev-span, calc(13 - var(--yev-start, 1)));
+  }
+
+  .yev-span-1 { --yev-span: 1; }
+  .yev-span-2 { --yev-span: 2; }
+  .yev-span-3 { --yev-span: 3; }
+  .yev-span-4 { --yev-span: 4; }
+  .yev-span-5 { --yev-span: 5; }
+  .yev-span-6 { --yev-span: 6; }
+  .yev-span-7 { --yev-span: 7; }
+  .yev-span-8 { --yev-span: 8; }
+  .yev-span-9 { --yev-span: 9; }
+  .yev-span-10 { --yev-span: 10; }
+  .yev-span-11 { --yev-span: 11; }
+  .yev-span-12 { --yev-span: 12; }
+
+  .yev-start-1 { --yev-start: 1; }
+  .yev-start-2 { --yev-start: 2; }
+  .yev-start-3 { --yev-start: 3; }
+  .yev-start-4 { --yev-start: 4; }
+  .yev-start-5 { --yev-start: 5; }
+  .yev-start-6 { --yev-start: 6; }
+  .yev-start-7 { --yev-start: 7; }
+  .yev-start-8 { --yev-start: 8; }
+  .yev-start-9 { --yev-start: 9; }
+  .yev-start-10 { --yev-start: 10; }
+  .yev-start-11 { --yev-start: 11; }
+  .yev-start-12 { --yev-start: 12; }
+}
+
+/* Breakout — a reading column with wider and full-width relationships, no
+   100vw tricks. Children sit in the measure by default:
+
+     <article class="yev-breakout">
+       <p>In the measure.</p>
+       <figure class="yev-wide">Wider than the text.</figure>
+       <figure class="yev-full">Edge to edge.</figure>
+       <figure class="yev-bleed-end">Text edge to the right viewport edge.</figure>
+     </article>
+
+   The column is not centered unless the free space is split evenly. Skew it
+   with the two free-space weights, e.g. --yev-breakout-lead: 1fr;
+   --yev-breakout-trail: 3fr. */
+.yev-breakout {
+  --_wide: var(--yev-breakout-wide, var(--yev-space-8));
+  display: grid;
+  grid-template-columns:
+    [full-start] minmax(var(--yev-page-margin), var(--yev-breakout-lead, 1fr))
+    [wide-start] minmax(0, var(--_wide))
+    [content-start] minmax(0, var(--yev-measure))
+    [content-end] minmax(0, var(--_wide))
+    [wide-end] minmax(var(--yev-page-margin), var(--yev-breakout-trail, 1fr))
+    [full-end];
+}
+
+.yev-breakout > * {
+  grid-column: content;
+}
+
+.yev-breakout > .yev-wide {
+  grid-column: wide;
+}
+
+.yev-breakout > .yev-full {
+  grid-column: full;
+}
+
+.yev-breakout > .yev-bleed-start {
+  grid-column: full-start / content-end;
+}
+
+.yev-breakout > .yev-bleed-end {
+  grid-column: content-start / full-end;
+}

@@ -1,0 +1,78 @@
+/* RSSDeck dialect of yev-design: application / operational.
+   Foundations live in the `yev` cascade layers; everything in this file is
+   unlayered and therefore overrides them without specificity fights. */
+
+@import "../styles/yev/foundations/index.css";
+
+:root {
+  --yev-font-sans: var(--font-atkinson-next), system-ui, sans-serif;
+
+  /* Application scale: page titles around 1.5–2.5× body. */
+  --yev-h1-size: 1.75rem;
+  --yev-h2-size: 1.375rem;
+  --yev-h3-size: 1.125rem;
+  --yev-h4-size: var(--yev-text-body);
+}
+
+body {
+  min-block-size: 100dvb;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Shell ---------------------------------------------------------------------- */
+
+.shell-header {
+  padding-block: var(--yev-space-4);
+}
+
+.shell-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--yev-space-2);
+  font-size: var(--yev-text-ui);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* Identity notation only: carries no meaning and is hidden from AT. */
+.shell-wordmark::before {
+  content: "";
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  background: var(--yev-signal);
+}
+
+.shell-main {
+  flex: 1;
+  padding-block: var(--yev-space-7) var(--yev-space-9);
+}
+
+.shell-main:focus {
+  outline: none;
+}
+
+/* Context / content: an unequal split that collapses to one column. */
+.shell-layout {
+  display: grid;
+  gap: var(--yev-space-5) var(--yev-gutter);
+}
+
+@media (min-width: 56rem) {
+  .shell-layout {
+    grid-template-columns: minmax(12rem, 1fr) minmax(0, 2.5fr);
+  }
+}
+
+.shell-context {
+  padding-block-start: var(--yev-space-2);
+}
+
+.empty-state {
+  --yev-stack-gap: var(--yev-space-3);
+  max-inline-size: var(--yev-measure);
+}
+
+.empty-state p {
+  color: var(--yev-muted);
+}

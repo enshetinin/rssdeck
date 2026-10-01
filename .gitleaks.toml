@@ -1,0 +1,25 @@
+# Secret scanning for a public repository. Runs in CI on full history and
+# locally with `npm run secrets:scan` (requires Docker).
+title = "RSSDeck gitleaks config"
+
+[extend]
+useDefault = true
+
+# Supabase key formats, in case the default rules miss them.
+[[rules]]
+id = "supabase-secret-key"
+description = "Supabase secret key"
+regex = '''sb_secret_[A-Za-z0-9_-]{20,}'''
+keywords = ["sb_secret_"]
+
+[[rules]]
+id = "supabase-publishable-key"
+description = "Supabase publishable key (not secret, but should come from env, not source)"
+regex = '''sb_publishable_[A-Za-z0-9_-]{20,}'''
+keywords = ["sb_publishable_"]
+
+[[rules]]
+id = "postgres-connection-string-with-password"
+description = "PostgreSQL URL with embedded credentials"
+regex = '''postgres(?:ql)?://[^:\s/]+:[^@\s]+@[^\s'"]+'''
+keywords = ["postgres://", "postgresql://"]

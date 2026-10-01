@@ -1,0 +1,105 @@
+/* Yev Design — tokens
+   Primitives and theme-aware roles. No component, layout or heading tokens.
+
+   Theming: follows the OS by default. Force a theme on any element with
+   data-theme="light" or data-theme="dark". Roles use light-dark(), so nested
+   themed regions resolve correctly. */
+
+:root {
+  color-scheme: light dark;
+
+  /* Core palette */
+  --yev-paper: #f2efe8;
+  --yev-ink: #11100e;
+
+  /* Yev Signal — identity ink, not an interaction, status or primary color.
+     5.7:1 on ink, but only 2.9:1 on paper: on light surfaces it is ornament
+     or notation, never the sole carrier of meaning and never text. */
+  --yev-signal: #ff4d1f;
+
+  /* Warm neutrals (contrast against their own theme's background) */
+  --yev-muted-light: #514d47; /* 7.3:1 on paper */
+  --yev-muted-dark: #a49e94; /* 7.2:1 on ink */
+  --yev-edge-light: #8b857c; /* 3.2:1 on paper — meets 3:1 for UI boundaries */
+  --yev-edge-dark: #6b655c; /* 3.3:1 on ink */
+  --yev-sand: #c8bdaa;
+  --yev-umber: #3a3732; /* dark-theme counterpart of sand */
+
+  /* Roles */
+  --yev-bg: light-dark(var(--yev-paper), var(--yev-ink));
+  --yev-fg: light-dark(var(--yev-ink), var(--yev-paper));
+  --yev-muted: light-dark(var(--yev-muted-light), var(--yev-muted-dark));
+  --yev-edge: light-dark(var(--yev-edge-light), var(--yev-edge-dark));
+  --yev-rule: light-dark(var(--yev-sand), var(--yev-umber)); /* decorative separators only */
+  --yev-wash: color-mix(in srgb, var(--yev-fg) 7%, transparent);
+  --yev-wash-strong: color-mix(in srgb, var(--yev-fg) 14%, transparent);
+
+  /* Semantic roles — state, never brand. Fully independent of --yev-signal.
+     Each is an ink for text, icons and marks on --yev-bg: at least 7:1 against
+     paper (light) and ink (dark), and 4.5:1 or better on rails, raised
+     surfaces and the 14% wash. Hues sit apart from signal (orange-red) and
+     from each other. Pair with a word or icon: color is never the sole
+     carrier of meaning. */
+  --yev-success: light-dark(#175a30, #7ccb98);
+  --yev-warning: light-dark(#6d4100, #e8b23f);
+  --yev-error: light-dark(#9a1036, #ff8fa8);
+  --yev-info: light-dark(#1b4790, #8db4f2);
+
+  /* Type families. Each stack names the variable family first ("… Variable",
+     as variable packages register it), then the static one, so a variable font
+     is never shadowed by a static or locally installed copy of the same face
+     (Newsreader's optical size axis is the case that matters). Either kind of
+     package works without a project override. Fonts are loaded by the project,
+     not here. */
+  --yev-font-sans: "Atkinson Hyperlegible Next Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --yev-font-serif: "Newsreader Variable", "Newsreader", Georgia, "Times New Roman", serif;
+  --yev-font-mono: "Atkinson Hyperlegible Mono Variable", "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Reading measure — useful range is roughly 55–70ch */
+  --yev-measure: 62ch;
+
+  /* Spacing */
+  --yev-space-1: 0.25rem;
+  --yev-space-2: 0.5rem;
+  --yev-space-3: 0.75rem;
+  --yev-space-4: 1rem;
+  --yev-space-5: 1.5rem;
+  --yev-space-6: 2rem;
+  --yev-space-7: 3rem;
+  --yev-space-8: 4rem;
+  --yev-space-9: 6rem;
+  --yev-space-10: 8rem;
+
+  /* Shape — predominantly rectilinear. 999px is for genuinely round things. */
+  --yev-radius-surface: 0;
+  --yev-radius-control: 2px;
+  --yev-radius-round: 999px;
+
+  /* Motion */
+  --yev-motion-fast: 120ms;
+  --yev-motion-default: 180ms;
+  --yev-motion-structural: 260ms;
+
+  /* Accessibility */
+  --yev-focus: var(--yev-fg);
+  --yev-focus-width: 3px;
+  --yev-focus-offset: 3px;
+  --yev-target: 2.75rem; /* 44px preferred touch target (WCAG 2.5.8 minimum is 24px) */
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* Strengthen the quiet neutrals when the user asks for more contrast. */
+@media (prefers-contrast: more) {
+  :root {
+    --yev-muted: var(--yev-fg);
+    --yev-edge: var(--yev-fg);
+    --yev-rule: var(--yev-fg);
+  }
+}

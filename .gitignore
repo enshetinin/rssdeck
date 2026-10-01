@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+
+# Next.js / build output
+.next/
+out/
+build/
+next-env.d.ts
+*.tsbuildinfo
+
+# Testing
+coverage/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# Environment files: real values never leave this machine.
+# Only .env.example (placeholders) is committed.
+.env
+.env.*
+!.env.example
+
+# Secrets and credentials that must never be committed
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+secrets/
+signing_keys.json
+.npmrc
+
+# Supabase local state (also covered by supabase/.gitignore)
+supabase/.branches/
+supabase/.temp/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Local Claude Code settings
+.claude/settings.local.json

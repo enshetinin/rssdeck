@@ -1,0 +1,15 @@
+/* Yev Design — foundations
+   Each file also works on its own (tokens.css is required by the others).
+
+   Everything is placed in the cascade layer `yev`, in this order. Any
+   unlayered project CSS therefore overrides the foundation regardless of
+   selector specificity — no !important, no specificity fights. If your project
+   uses its own layers, declare `yev` before them. */
+
+@layer yev.tokens, yev.reset, yev.typography, yev.layout, yev.interactions;
+
+@import url("./tokens.css") layer(yev.tokens);
+@import url("./reset.css") layer(yev.reset);
+@import url("./typography.css") layer(yev.typography);
+@import url("./layout.css") layer(yev.layout);
+@import url("./interactions.css") layer(yev.interactions);
