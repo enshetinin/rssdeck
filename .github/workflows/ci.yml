@@ -48,13 +48,20 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       # Auth, REST and the database only; migrations and seed are applied.
-      - run: >-
+      # stdout is discarded because it prints the local stack's keys; errors
+      # still reach the log on stderr.
+      - name: Start local Supabase
+        run: >-
           npx supabase start
           -x studio,imgproxy,logflare,vector,edge-runtime,storage-api,realtime,mailpit,supavisor,postgres-meta
-      # The local stack's well-known development keys, never real credentials.
+          > /dev/null
+      # The throwaway local stack's development keys, never real credentials.
+      # Masked anyway, so they never appear in a public log.
       - name: Write .env.local for the local stack
         run: |
           eval "$(npx supabase status -o env | grep -E '^(API_URL|PUBLISHABLE_KEY|SECRET_KEY)=')"
+          echo "::add-mask::$PUBLISHABLE_KEY"
+          echo "::add-mask::$SECRET_KEY"
           {
             echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
             echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
