@@ -1,5 +1,7 @@
+import { EditFeedButton } from "./edit-feed-button";
 import { describeFeedStatus } from "./feed-status";
 import type { FeedListItem } from "./queries";
+import { refreshIntervalLabel } from "./refresh-intervals";
 import { RemoveFeedButton } from "./remove-feed-button";
 
 export function FeedList({ feeds, now }: { feeds: FeedListItem[]; now: Date }) {
@@ -27,10 +29,19 @@ export function FeedList({ feeds, now }: { feeds: FeedListItem[]; now: Date }) {
                   {status.kind === "healthy"
                     ? `Updated ${status.updated}`
                     : "Waiting for the first refresh"}
+                  {` · ${refreshIntervalLabel(feed.refreshIntervalMinutes)}`}
                 </p>
               )}
             </div>
-            <RemoveFeedButton feedId={feed.id} feedName={name} />
+            <div className="feed-row-actions">
+              <EditFeedButton
+                feedId={feed.id}
+                feedName={name}
+                title={feed.title}
+                refreshIntervalMinutes={feed.refreshIntervalMinutes}
+              />
+              <RemoveFeedButton feedId={feed.id} feedName={name} />
+            </div>
           </li>
         );
       })}

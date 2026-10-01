@@ -64,3 +64,39 @@ test("removes a feed after confirmation", async ({ page }) => {
     await deleteTestFeed(feed.id);
   }
 });
+
+test("edits a feed's title and refresh interval", async ({ page }) => {
+  const feed = await createTestFeed();
+  const name = feed.title ?? "";
+  try {
+    await signIn(page, "/feeds");
+    const row = page.getByRole("listitem").filter({ hasText: feed.feed_url });
+    await expect(row).toContainText("Every hour");
+
+    await row.getByRole("button", { name: `Edit ${name}` }).click();
+    const dialog = page.getByRole("dialog", { name: `Edit ${name}` });
+    const title = dialog.getByLabel("Title");
+    await expect(title).toBeFocused();
+    await title.fill(`${name} renamed`);
+    await dialog.getByLabel("Refresh").selectOption({ label: "Every 6 hours" });
+    await dialog.getByRole("button", { name: "Save" }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(row).toContainText(`${name} renamed`);
+    await expect(row).toContainText("Every 6 hours");
+
+    // An empty title falls back to the address until the feed provides one.
+    await row.getByRole("button", { name: `Edit ${name} renamed` }).click();
+    await page
+      .getByRole("dialog", { name: `Edit ${name} renamed` })
+      .getByLabel("Title")
+      .fill("");
+    await page
+      .getByRole("dialog", { name: `Edit ${name} renamed` })
+      .getByRole("button", { name: "Save" })
+      .click();
+    await expect(row.locator(".feed-name")).toHaveText(new URL(feed.feed_url).hostname);
+  } finally {
+    await deleteTestFeed(feed.id);
+  }
+});

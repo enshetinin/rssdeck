@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible_Next, Newsreader } from "next/font/google";
+import { cookies } from "next/headers";
+
+import { parseThemePreference, THEME_COOKIE, themeAttribute } from "@/features/theme/theme";
 
 import "./globals.css";
 
@@ -37,9 +40,15 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const theme = parseThemePreference((await cookies()).get(THEME_COOKIE)?.value);
+
   return (
-    <html lang="en" className={`${atkinsonNext.variable} ${newsreader.variable}`}>
+    <html
+      lang="en"
+      className={`${atkinsonNext.variable} ${newsreader.variable}`}
+      data-theme={themeAttribute(theme)}
+    >
       <body>
         <a className="yev-skip-link" href="#main">
           Skip to content

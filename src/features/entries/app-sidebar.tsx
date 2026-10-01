@@ -6,8 +6,11 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { signOut } from "@/features/auth/actions";
 import { KeyboardShortcuts } from "@/features/shortcuts/keyboard-shortcuts";
+import { ThemeChoice } from "@/features/theme/theme-choice";
+import type { ThemePreference } from "@/features/theme/theme";
 
 import type { SidebarData } from "./queries";
+import { UnreadDocumentTitle } from "./unread-document-title";
 import { parseViewParams, viewHref, type EntryFilter } from "./view-params";
 
 const VIEWS: { filter: EntryFilter; label: string; count: (data: SidebarData) => number }[] = [
@@ -25,10 +28,12 @@ export function AppSidebar({
   data,
   email,
   version,
+  theme,
 }: {
   data: SidebarData;
   email: string | null;
   version: string;
+  theme: ThemePreference;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -57,6 +62,7 @@ export function AppSidebar({
 
   return (
     <div className="app-sidebar" data-open={open || undefined}>
+      <UnreadDocumentTitle unread={data.unread} />
       <div className="app-sidebar-bar">
         <Link href="/" className="shell-wordmark">
           RSSDeck
@@ -125,6 +131,7 @@ export function AppSidebar({
         </nav>
 
         <div className="sidebar-account">
+          <ThemeChoice initial={theme} />
           <KeyboardShortcuts />
           {email ? <p className="sidebar-email">{email}</p> : null}
           <form action={signOut}>

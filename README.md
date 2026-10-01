@@ -71,11 +71,13 @@ The app is a three-column reader: feeds and views (All, Unread, Starred) with co
 
 Opening an entry marks it read; entries can be starred, marked unread, and a feed (or everything) marked as read after confirming. Feed HTML is sanitized on the server with an allowlist (`src/lib/html/sanitize-feed-html.ts`) before it is rendered: no scripts, styles, frames, forms or event handlers; links open in a new tab without a referrer.
 
+The sidebar has a System / Light / Dark theme switch (kept in a cookie, so the page renders in the right theme without a flash), and the tab title shows the unread count.
+
 Keyboard shortcuts: `j` / `k` next and previous entry, `s` star, `m` read/unread, `o` open the original, `?` help. They can be turned off in the help dialog (also reachable from "Keyboard shortcuts" in the sidebar), and are ignored while typing in a field.
 
 ## Feeds
 
-At `/feeds` ("Manage feeds") a user adds a feed by its address or by a website address (the page's `<link rel="alternate">` feeds are discovered; everything is fetched through the same network guard as ingestion), sees each feed's last refresh or error, and removes feeds after confirming. New feeds get their entries on the next ingestion run.
+At `/feeds` ("Manage feeds") a user adds a feed by its address or by a website address (the page's `<link rel="alternate">` feeds are discovered; everything is fetched through the same network guard as ingestion), sees each feed's last refresh or error and refresh interval, renames a feed or changes how often it is refreshed, and removes feeds after confirming. New feeds get their entries on the next ingestion run.
 
 Subscriptions can be imported from and exported to OPML, the format other readers use. Imports are capped at 500 feeds and 512 KB, folders are flattened, and imported feeds are not fetched on the spot: ingestion checks them and reports broken ones.
 
@@ -116,6 +118,8 @@ tests/              unit and end-to-end tests
 Supabase (database and auth) plus Render (web service and ingestion cron), described in `render.yaml`. Step-by-step guide: [docs/deployment.md](docs/deployment.md).
 
 ## Security
+
+Dependabot (`.github/dependabot.yml`) opens weekly pull requests for npm and GitHub Actions updates; also enable Dependabot security updates under Settings → Code security.
 
 This repository is public. Never commit credentials, tokens, `.env` files with real values, or production data. Only placeholders belong in `.env.example`. CI scans the full history with gitleaks.
 

@@ -19,6 +19,8 @@ test.describe("reader", () => {
     await page.goto(`/?feed=${feed.id}`);
 
     await expect(page.getByRole("heading", { level: 1, name: feed.title ?? "" })).toBeVisible();
+    // The tab shows the total unread count first.
+    await expect(page).toHaveTitle(/^\(\d+\) .+ · RSSDeck$/);
     // The list pane is hidden while reading on narrow screens; check its text.
     await expect(page.locator(".pane-meta")).toHaveText("3 unread");
 

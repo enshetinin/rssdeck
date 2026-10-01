@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { normalizeFeedUrl } from "./feed-url";
 import { prepareImport } from "./prepare-import";
+import { isRefreshInterval } from "./refresh-intervals";
 import { FeedNotFoundError, resolveFeed } from "./resolve-feed";
 
 export type AddFeedState =
@@ -138,6 +139,52 @@ export async function importFeeds(
     skipped: prepared.invalid + prepared.duplicates,
     overLimit: prepared.overLimit,
   };
+}
+
+export type UpdateFeedState =
+  | { status: "idle" }
+  | { status: "error"; error: string; title: string }
+  | { status: "saved"; savedAt: number };
+
+const MAX_TITLE_LENGTH = 1000;
+
+/**
+ * Renames a feed and/or changes how often it is refreshed. An empty title
+ * goes back to the feed's own title, filled in by the next full refresh.
+ */
+export async function updateFeed(
+  _previous: UpdateFeedState,
+  formData: FormData,
+): Promise<UpdateFeedState> {
+  await requireUser();
+
+  const feedId = String(formData.get("feedId") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const interval = Number(formData.get("refreshInterval"));
+
+  if (!UUID_PATTERN.test(feedId)) {
+    return { status: "error", error: "This feed no longer exists.", title };
+  }
+  if (title.length > MAX_TITLE_LENGTH) {
+    return { status: "error", error: "Use a title of at most 1000 characters.", title };
+  }
+  if (!isRefreshInterval(interval)) {
+    return { status: "error", error: "Choose one of the refresh options.", title };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("feeds")
+    .update({ title: title || null, refresh_interval_minutes: interval })
+    .eq("id", feedId)
+    .select("id");
+
+  if (error) throw new Error(`Updating feed failed: ${error.message}`);
+  // RLS hides other users' feeds, so "not yours" and "already gone" look the same.
+  if (data.length === 0) return { status: "error", error: "This feed no longer exists.", title };
+
+  revalidatePath("/", "layout");
+  return { status: "saved", savedAt: Date.now() };
 }
 
 export type RemoveFeedState =

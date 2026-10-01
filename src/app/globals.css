@@ -229,6 +229,43 @@ body {
   font-size: var(--yev-text-ui);
 }
 
+/* Theme switch: yev-design choice group, selection drawn as an underline
+   (text-relative strategy; survives forced colors on its own). */
+.theme-choice {
+  --yev-choices-gap: var(--yev-space-4);
+  --yev-choice-min-block: 2.25rem;
+  margin-block-end: var(--yev-space-2);
+}
+
+.theme-choice > legend {
+  font-size: var(--yev-text-meta);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--yev-muted);
+}
+
+.theme-choice .yev-choice {
+  display: inline-flex;
+  align-items: center;
+}
+
+.theme-choice .yev-choice > span {
+  text-underline-offset: 0.35em;
+}
+
+@media (hover: hover) {
+  .theme-choice .yev-choice:hover > span {
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+  }
+}
+
+/* Thickness, not weight, marks the choice, so the options never shift. */
+.theme-choice .yev-choice:has(> input:checked) > span {
+  text-decoration-line: underline;
+  text-decoration-thickness: 3px;
+}
+
 .sidebar-version {
   margin-block-start: var(--yev-space-3);
   color: var(--yev-muted);
@@ -550,6 +587,11 @@ body {
   gap: var(--yev-space-1);
   flex: 1 1 20rem;
   min-inline-size: 0;
+}
+
+.feed-row-actions {
+  display: flex;
+  gap: var(--yev-space-5);
 }
 
 .feed-name {

@@ -11,6 +11,7 @@ export type FeedListItem = {
   lastError: string | null;
   nextFetchAt: string;
   consecutiveFailureCount: number;
+  refreshIntervalMinutes: number;
 };
 
 /** The signed-in user's feeds. RLS limits the rows to their own. */
@@ -19,7 +20,7 @@ export async function listFeeds(): Promise<FeedListItem[]> {
   const { data, error } = await supabase
     .from("feeds")
     .select(
-      "id, feed_url, title, site_url, last_succeeded_at, last_error, next_fetch_at, consecutive_failure_count",
+      "id, feed_url, title, site_url, last_succeeded_at, last_error, next_fetch_at, consecutive_failure_count, refresh_interval_minutes",
     )
     .order("title", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
@@ -35,5 +36,6 @@ export async function listFeeds(): Promise<FeedListItem[]> {
     lastError: row.last_error,
     nextFetchAt: row.next_fetch_at,
     consecutiveFailureCount: row.consecutive_failure_count,
+    refreshIntervalMinutes: row.refresh_interval_minutes,
   }));
 }
