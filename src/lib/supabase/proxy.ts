@@ -36,7 +36,13 @@ export async function updateSession(request: NextRequest) {
 
   // Validates the JWT and refreshes an expiring session. Do not put code
   // between client creation and this call.
-  const { data } = await supabase.auth.getClaims();
+  const { data, error } = await supabase.auth.getClaims();
+
+  // A session cookie that does not validate means a broken setup (wrong
+  // Supabase URL or key, unreachable JWKS), not a signed-out visitor.
+  if (error && request.cookies.getAll().some(({ name }) => name.startsWith("sb-"))) {
+    console.error("Session validation failed:", { name: error.name, message: error.message });
+  }
 
   return { response, isSignedIn: Boolean(data?.claims) };
 }

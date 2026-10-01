@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 import { safeRedirectPath } from "./redirect";
+import { signInErrorMessage } from "./sign-in-errors";
 
 export type SignInState = {
   error: string | null;
@@ -23,12 +24,15 @@ export async function signIn(_previous: SignInState, formData: FormData): Promis
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    // One message for unknown email and wrong password: do not reveal which.
-    const message =
-      error.status === 429
-        ? "Too many sign-in attempts. Wait a moment and try again."
-        : "Email or password is incorrect.";
-    return { error: message, email };
+    // Logged server-side (Render logs) so configuration problems are visible.
+    // No email or password: only Supabase's error identifiers.
+    console.error("Sign-in failed:", {
+      name: error.name,
+      code: error.code,
+      status: error.status,
+      message: error.message,
+    });
+    return { error: signInErrorMessage(error), email };
   }
 
   redirect(safeRedirectPath(formData.get("next")));
