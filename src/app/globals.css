@@ -229,6 +229,13 @@ body {
   font-size: var(--yev-text-ui);
 }
 
+.sidebar-version {
+  margin-block-start: var(--yev-space-3);
+  color: var(--yev-muted);
+  font-size: var(--yev-text-meta);
+  font-variant-numeric: tabular-nums;
+}
+
 .sidebar-email {
   color: var(--yev-muted);
   font-size: var(--yev-text-meta);

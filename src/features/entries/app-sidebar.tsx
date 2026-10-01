@@ -21,7 +21,15 @@ const VIEWS: { filter: EntryFilter; label: string; count: (data: SidebarData) =>
  * marker follows client-side navigation; on narrow screens it collapses into a
  * disclosure (not a dialog: the page stays usable).
  */
-export function AppSidebar({ data, email }: { data: SidebarData; email: string | null }) {
+export function AppSidebar({
+  data,
+  email,
+  version,
+}: {
+  data: SidebarData;
+  email: string | null;
+  version: string;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -124,6 +132,7 @@ export function AppSidebar({ data, email }: { data: SidebarData; email: string |
               Sign out
             </button>
           </form>
+          <p className="sidebar-version">RSSDeck {version}</p>
         </div>
       </div>
     </div>

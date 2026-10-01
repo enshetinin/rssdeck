@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import packageJson from "../../package.json" with { type: "json" };
 import { DEV_USER, signIn } from "./fixtures";
 
 test("signed-out visitors are sent to sign in, then back", async ({ page }) => {
@@ -47,6 +48,7 @@ test("signing out ends the session", async ({ page }) => {
   const menu = page.getByRole("button", { name: "Menu" });
   if (await menu.isVisible()) await menu.click();
   await expect(page.getByText(DEV_USER.email)).toBeVisible();
+  await expect(page.getByText(`RSSDeck ${packageJson.version}`)).toBeVisible();
 
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login$/);
