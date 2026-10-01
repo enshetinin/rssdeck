@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { signOut } from "@/features/auth/actions";
+import { KeyboardShortcuts } from "@/features/shortcuts/keyboard-shortcuts";
 
 import type { SidebarData } from "./queries";
 import { parseViewParams, viewHref, type EntryFilter } from "./view-params";
@@ -116,6 +117,7 @@ export function AppSidebar({ data, email }: { data: SidebarData; email: string |
         </nav>
 
         <div className="sidebar-account">
+          <KeyboardShortcuts />
           {email ? <p className="sidebar-email">{email}</p> : null}
           <form action={signOut}>
             <button type="submit" className="yev-button yev-button-text">

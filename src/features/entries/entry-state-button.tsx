@@ -10,10 +10,13 @@ export function EntryStateButton({
   pressed,
   label,
   action,
+  shortcut,
 }: {
   pressed: boolean;
   label: string;
   action: () => Promise<void>;
+  /** Key that activates this button (see features/shortcuts). */
+  shortcut?: { key: string; name: string };
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -22,6 +25,8 @@ export function EntryStateButton({
       type="button"
       className="yev-button yev-button-outline"
       aria-pressed={pressed}
+      aria-keyshortcuts={shortcut?.key}
+      data-shortcut={shortcut?.name}
       aria-disabled={pending || undefined}
       onClick={() => {
         if (!pending) startTransition(action);

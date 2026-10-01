@@ -71,6 +71,8 @@ The app is a three-column reader: feeds and views (All, Unread, Starred) with co
 
 Opening an entry marks it read; entries can be starred, marked unread, and a feed (or everything) marked as read. Feed HTML is sanitized on the server with an allowlist (`src/lib/html/sanitize-feed-html.ts`) before it is rendered: no scripts, styles, frames, forms or event handlers; links open in a new tab without a referrer.
 
+Keyboard shortcuts: `j` / `k` next and previous entry, `s` star, `m` read/unread, `o` open the original, `?` help. They can be turned off in the help dialog (also reachable from "Keyboard shortcuts" in the sidebar), and are ignored while typing in a field.
+
 ## Feeds
 
 At `/feeds` ("Manage feeds") a user adds a feed by its address (fetched once to check that it is a feed, with the same network guard as ingestion), sees each feed's last refresh or error, and removes feeds after confirming. New feeds get their entries on the next ingestion run.

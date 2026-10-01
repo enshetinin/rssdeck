@@ -24,7 +24,12 @@ export function EntryReader({
 
   return (
     <article className="reader-article" aria-labelledby={headingId}>
-      <EntryViewEffects entryId={entry.id} isRead={entry.isRead} headingId={headingId} />
+      <EntryViewEffects
+        key={entry.id}
+        entryId={entry.id}
+        isRead={entry.isRead}
+        headingId={headingId}
+      />
       <p className="reader-back">
         <Link href={backHref}>← {backLabel}</Link>
       </p>
@@ -46,11 +51,13 @@ export function EntryReader({
             pressed={entry.isStarred}
             label="Starred"
             action={setEntryStarred.bind(null, entry.id, !entry.isStarred)}
+            shortcut={{ key: "s", name: "toggle-star" }}
           />
           <EntryStateButton
             pressed={entry.isRead}
             label="Read"
             action={setEntryRead.bind(null, entry.id, !entry.isRead)}
+            shortcut={{ key: "m", name: "toggle-read" }}
           />
           {entry.url ? (
             <a
@@ -58,6 +65,8 @@ export function EntryReader({
               target="_blank"
               rel="noopener noreferrer"
               className="reader-original"
+              aria-keyshortcuts="o"
+              data-shortcut="open-original"
             >
               Open original<span className="yev-sr-only"> (opens in a new tab)</span>
               <span aria-hidden="true"> ↗</span>

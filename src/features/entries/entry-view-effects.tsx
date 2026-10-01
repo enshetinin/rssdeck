@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 
 import { setEntryRead } from "./actions";
 
@@ -8,8 +8,12 @@ const NARROW = "(max-width: 69.99rem)";
 
 /**
  * Opening an entry marks it read (after render, never during a GET, so link
- * prefetching cannot mark anything). On narrow layouts the list is hidden
- * while reading, so focus moves to the article heading.
+ * prefetching cannot mark anything). Only the state at the moment of opening
+ * counts: marking the entry unread afterwards must stick. Render with
+ * key={entryId} so each opened entry gets a fresh instance.
+ *
+ * On narrow layouts the list is hidden while reading, so focus moves to the
+ * article heading.
  */
 export function EntryViewEffects({
   entryId,
@@ -20,22 +24,20 @@ export function EntryViewEffects({
   isRead: boolean;
   headingId: string;
 }) {
-  const markedRef = useRef<string | null>(null);
+  const [wasReadWhenOpened] = useState(isRead);
 
   useEffect(() => {
-    if (isRead || markedRef.current === entryId) return;
-    markedRef.current = entryId;
+    if (wasReadWhenOpened) return;
     setEntryRead(entryId, true).catch((error: unknown) => {
-      markedRef.current = null;
       console.error("Marking the entry read failed:", error);
     });
-  }, [entryId, isRead]);
+  }, [entryId, wasReadWhenOpened]);
 
   useEffect(() => {
     if (window.matchMedia(NARROW).matches) {
       document.getElementById(headingId)?.focus();
     }
-  }, [entryId, headingId]);
+  }, [headingId]);
 
   return null;
 }

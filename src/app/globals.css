@@ -620,6 +620,44 @@ body {
   display: none;
 }
 
+/* Keyboard shortcuts ------------------------------------------------------------- */
+
+.shortcut-list {
+  display: grid;
+  gap: var(--yev-space-2);
+}
+
+.shortcut-list > div {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  align-items: baseline;
+  gap: var(--yev-space-3);
+}
+
+.shortcut-list kbd {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 1.75rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--yev-edge);
+  border-block-end-width: 2px;
+  border-radius: var(--yev-radius-control);
+  font-size: var(--yev-text-ui);
+}
+
+.shortcut-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--yev-space-3);
+  min-block-size: var(--yev-target);
+}
+
+.shortcut-toggle input {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  accent-color: var(--yev-fg);
+}
+
 /* Dialog ----------------------------------------------------------------------- */
 
 .confirm-dialog {
