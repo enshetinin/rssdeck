@@ -187,4 +187,18 @@ describe("runIngestion", () => {
 
     expect(summary).toEqual({ processed: 2, updated: 0, "not-modified": 0, failed: 2 });
   });
+
+  it("also takes feeds that become due within the next few minutes", async () => {
+    const repository = fakeRepository([]);
+    await runIngestion({
+      repository,
+      fetchFeed: async () => {
+        throw new Error("not called");
+      },
+      parseFeed: () => parsed,
+      now: () => now,
+      logger: silentLogger,
+    });
+    expect(repository.listDueFeeds).toHaveBeenCalledWith(new Date("2026-10-01T12:05:00Z"), 200);
+  });
 });

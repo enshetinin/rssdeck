@@ -14,6 +14,12 @@ export type IngestionDependencies = {
   concurrency?: number;
   /** Maximum feeds handled per run; the rest stay due for the next run. */
   batchLimit?: number;
+  /**
+   * Also handle feeds that become due this soon. A feed fetched at 10:00:05
+   * with a 60-minute interval is due at 11:00:05; without slack, an hourly
+   * run at 11:00:00 would skip it until 12:00.
+   */
+  dueWithinMs?: number;
   logger?: Pick<Console, "info" | "error">;
 };
 
@@ -27,9 +33,15 @@ export type IngestionSummary = Record<FeedOutcome, number> & { processed: number
  * be loaded at all.
  */
 export async function runIngestion(deps: IngestionDependencies): Promise<IngestionSummary> {
-  const { repository, now = () => new Date(), concurrency = 4, batchLimit = 200 } = deps;
+  const {
+    repository,
+    now = () => new Date(),
+    concurrency = 4,
+    batchLimit = 200,
+    dueWithinMs = 5 * 60_000,
+  } = deps;
 
-  const feeds = await repository.listDueFeeds(now(), batchLimit);
+  const feeds = await repository.listDueFeeds(new Date(now().getTime() + dueWithinMs), batchLimit);
   const summary: IngestionSummary = { processed: 0, updated: 0, "not-modified": 0, failed: 0 };
 
   let next = 0;

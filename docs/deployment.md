@@ -63,17 +63,19 @@ service-role key.
 4. Wait for both services to build. Note the web service URL and finish
    Supabase step 1.5.
 5. Open the URL, sign in with the user from Supabase step 1.4, and add feeds
-   under **Manage feeds**. Entries appear after the next cron run (at most 15
-   minutes), or trigger one with **Trigger Run** on the `rssdeck-ingest` job.
+   under **Manage feeds**. Entries appear after the next cron run (at most an
+   hour), or trigger one with **Trigger Run** on the `rssdeck-ingest` job.
 
 ## Costs and limits
 
 - **Web service, free plan**: sleeps after a period without traffic; the first
   request afterwards takes a while to wake it. A paid plan avoids that.
-- **Cron job**: Render has no free plan for cron jobs. It is billed for the
-  time it runs, which is seconds per run.
+- **Cron job**: Render has no free plan for cron jobs. It is billed per second
+  of running time with a minimum of $1 per month; at seconds per hourly run,
+  the minimum is what you pay. **Billing** in the Render Dashboard shows the
+  month so far, and the job's page lists each run with its duration.
 - **Supabase free plan**: projects with no activity for a while are paused.
-  Ingestion talks to the database every 15 minutes, which normally keeps it
+  Ingestion talks to the database every hour, which normally keeps it
   active; check the Supabase dashboard if the app stops loading.
 
 ## Releasing changes
