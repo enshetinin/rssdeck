@@ -35,11 +35,11 @@ export function createFeedRepository(supabase: SupabaseClient<Database>): FeedRe
       }));
     },
 
-    async saveEntries(feedId, entries) {
+    async saveEntries(feedId, entries, seenAt) {
       for (let start = 0; start < entries.length; start += UPSERT_BATCH_SIZE) {
         const rows = entries
           .slice(start, start + UPSERT_BATCH_SIZE)
-          .map((entry) => toEntryRow(feedId, entry));
+          .map((entry) => toEntryRow(feedId, entry, seenAt));
         // Idempotent: re-ingesting the same entries updates them in place.
         const { error } = await supabase
           .from("entries")
@@ -59,6 +59,10 @@ export function createFeedRepository(supabase: SupabaseClient<Database>): FeedRe
         next_fetch_at: nextFetchAt.toISOString(),
       };
       if (metadata) {
+        // A full fetch: entries not upserted just now have left the feed.
+        // An empty feed is more likely a glitch than the truth; do not let it
+        // mark every entry as gone.
+        if (metadata.entryCount > 0) update.last_parsed_at = now.toISOString();
         update.site_url = metadata.siteUrl;
         update.description = metadata.description;
         update.favicon_url = metadata.faviconUrl;
@@ -66,6 +70,15 @@ export function createFeedRepository(supabase: SupabaseClient<Database>): FeedRe
         if (feed.title === null) update.title = metadata.title;
       }
       await updateFeed(feed.id, update);
+    },
+
+    async pruneEntries({ readDays, unreadDays }) {
+      const { data, error } = await supabase.rpc("prune_entries", {
+        p_read_days: readDays,
+        p_unread_days: unreadDays,
+      });
+      if (error) throw new Error(`Pruning entries failed: ${error.message}`);
+      return data;
     },
 
     async recordFailure(feed, { now, nextFetchAt, message }) {
@@ -84,9 +97,10 @@ export function createFeedRepository(supabase: SupabaseClient<Database>): FeedRe
   }
 }
 
-function toEntryRow(feedId: string, entry: NormalizedEntry): TablesInsert<"entries"> {
+function toEntryRow(feedId: string, entry: NormalizedEntry, seenAt: Date): TablesInsert<"entries"> {
   return {
     feed_id: feedId,
+    last_seen_at: seenAt.toISOString(),
     external_id: entry.externalId,
     title: entry.title,
     url: entry.url,

@@ -50,13 +50,24 @@ test.describe("reader", () => {
     await expect(page.getByRole("link", { name: /Entry 1/ })).toHaveCount(0);
   });
 
-  test("mark all as read clears the feed's unread count", async ({ page }) => {
+  test("mark all as read asks first, then clears the feed's unread count", async ({ page }) => {
     await signIn(page, "/");
     await page.goto(`/?feed=${feed.id}`);
-    await page.getByRole("button", { name: "Mark all as read" }).click();
+    const meta = page.locator(".pane-meta");
 
-    // The list pane is hidden while reading on narrow screens; check its text.
-    await expect(page.locator(".pane-meta")).toHaveText("0 unread");
+    await page.getByRole("button", { name: "Mark all as read" }).click();
+    const dialog = page.getByRole("dialog", { name: "Mark 3 entries as read?" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText(`Every unread entry in ${feed.title} is marked as read.`);
+    await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
+
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(meta).toHaveText("3 unread");
+
+    await page.getByRole("button", { name: "Mark all as read" }).click();
+    await dialog.getByRole("button", { name: "Mark as read" }).click();
+    await expect(meta).toHaveText("0 unread");
     await expect(page.getByRole("button", { name: "Mark all as read" })).toHaveCount(0);
   });
 

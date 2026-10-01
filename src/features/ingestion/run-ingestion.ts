@@ -66,12 +66,12 @@ async function ingestFeed(feed: DueFeed, deps: IngestionDependencies): Promise<F
     }
 
     const { entries, ...metadata } = parseFeed(result.body, result.finalUrl);
-    await repository.saveEntries(feed.id, entries);
+    await repository.saveEntries(feed.id, entries, fetchedAt);
     await repository.recordSuccess(feed, {
       now: fetchedAt,
       nextFetchAt: schedule,
       validators: result.validators,
-      metadata,
+      metadata: { ...metadata, entryCount: entries.length },
     });
     return "updated";
   } catch (error) {

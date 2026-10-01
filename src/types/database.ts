@@ -11,6 +11,7 @@ export type Database = {
           external_id: string;
           feed_id: string;
           id: string;
+          last_seen_at: string;
           published_at: string | null;
           sort_at: string | null;
           summary: string | null;
@@ -25,6 +26,7 @@ export type Database = {
           external_id: string;
           feed_id: string;
           id?: string;
+          last_seen_at?: string;
           published_at?: string | null;
           sort_at?: never;
           summary?: string | null;
@@ -39,6 +41,7 @@ export type Database = {
           external_id?: string;
           feed_id?: string;
           id?: string;
+          last_seen_at?: string;
           published_at?: string | null;
           sort_at?: never;
           summary?: string | null;
@@ -104,6 +107,7 @@ export type Database = {
           last_error: string | null;
           last_fetched_at: string | null;
           last_modified: string | null;
+          last_parsed_at: string | null;
           last_succeeded_at: string | null;
           next_fetch_at: string;
           refresh_interval_minutes: number;
@@ -123,6 +127,7 @@ export type Database = {
           last_error?: string | null;
           last_fetched_at?: string | null;
           last_modified?: string | null;
+          last_parsed_at?: string | null;
           last_succeeded_at?: string | null;
           next_fetch_at?: string;
           refresh_interval_minutes?: number;
@@ -142,6 +147,7 @@ export type Database = {
           last_error?: string | null;
           last_fetched_at?: string | null;
           last_modified?: string | null;
+          last_parsed_at?: string | null;
           last_succeeded_at?: string | null;
           next_fetch_at?: string;
           refresh_interval_minutes?: number;
@@ -194,6 +200,7 @@ export type Database = {
         }[];
       };
       mark_entries_read: { Args: { p_feed_id?: string }; Returns: number };
+      prune_entries: { Args: { p_read_days: number; p_unread_days: number }; Returns: number };
       set_entry_state: {
         Args: { p_entry_id: string; p_read?: boolean; p_starred?: boolean };
         Returns: undefined;

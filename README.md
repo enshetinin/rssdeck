@@ -69,7 +69,7 @@ RLS limits every authenticated user to their own feeds, the entries of those fee
 
 The app is a three-column reader: feeds and views (All, Unread, Starred) with counts on the left, the entry list in the middle, the open entry on the right. Narrower screens show one pane at a time. The view lives in the URL (`/?filter=unread&feed=…&entry=…`), so every state is linkable.
 
-Opening an entry marks it read; entries can be starred, marked unread, and a feed (or everything) marked as read. Feed HTML is sanitized on the server with an allowlist (`src/lib/html/sanitize-feed-html.ts`) before it is rendered: no scripts, styles, frames, forms or event handlers; links open in a new tab without a referrer.
+Opening an entry marks it read; entries can be starred, marked unread, and a feed (or everything) marked as read after confirming. Feed HTML is sanitized on the server with an allowlist (`src/lib/html/sanitize-feed-html.ts`) before it is rendered: no scripts, styles, frames, forms or event handlers; links open in a new tab without a referrer.
 
 Keyboard shortcuts: `j` / `k` next and previous entry, `s` star, `m` read/unread, `o` open the original, `?` help. They can be turned off in the help dialog (also reachable from "Keyboard shortcuts" in the sidebar), and are ignored while typing in a field.
 
@@ -88,6 +88,8 @@ Subscriptions can be imported from and exported to OPML, the format other reader
 3. Parse RSS 2.0, RSS 1.0 or Atom into `src/lib/rss/types.ts`, keeping only http(s) links.
 4. Upsert entries on `(feed_id, external_id)`, so re-running is idempotent.
 5. Schedule the next fetch: the refresh interval on success, exponential backoff (max 24 h) on failure.
+
+6. Prune old entries that have left their feeds: read ones 30 days and unread ones 90 days after they were first seen. Starred entries are never pruned, and an entry still in the feed is never pruned (it would come back as new on the next fetch). The policy lives in `src/features/ingestion/retention.ts`.
 
 A broken feed records a short `last_error` (never its URL, which may contain tokens) and never stops the run. Feed HTML is stored as received; it must be sanitized before rendering.
 

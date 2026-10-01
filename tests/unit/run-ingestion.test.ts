@@ -44,6 +44,7 @@ function fakeRepository(feeds: DueFeed[]) {
     saveEntries: vi.fn<FeedRepository["saveEntries"]>(async () => {}),
     recordSuccess: vi.fn<FeedRepository["recordSuccess"]>(async () => {}),
     recordFailure: vi.fn<FeedRepository["recordFailure"]>(async () => {}),
+    pruneEntries: vi.fn<FeedRepository["pruneEntries"]>(async () => 0),
   } satisfies FeedRepository;
 }
 
@@ -66,7 +67,7 @@ describe("runIngestion", () => {
     });
 
     expect(summary).toEqual({ processed: 1, updated: 1, "not-modified": 0, failed: 0 });
-    expect(repository.saveEntries).toHaveBeenCalledWith("a", parsed.entries);
+    expect(repository.saveEntries).toHaveBeenCalledWith("a", parsed.entries, now);
     expect(repository.recordSuccess).toHaveBeenCalledWith(expect.objectContaining({ id: "a" }), {
       now,
       nextFetchAt: new Date("2026-10-01T13:00:00Z"),
@@ -76,6 +77,7 @@ describe("runIngestion", () => {
         siteUrl: "https://feeds.example.test/",
         description: null,
         faviconUrl: null,
+        entryCount: 1,
       },
     });
   });

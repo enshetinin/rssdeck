@@ -9,12 +9,16 @@ export type DueFeed = {
   consecutiveFailureCount: number;
 };
 
-export type FeedMetadata = Omit<NormalizedFeed, "entries">;
+export type FeedMetadata = Omit<NormalizedFeed, "entries"> & {
+  /** How many entries the full fetch contained. */
+  entryCount: number;
+};
 
 /** Persistence operations ingestion needs. Implemented over Supabase in feed-repository.ts. */
 export type FeedRepository = {
   listDueFeeds(now: Date, limit: number): Promise<DueFeed[]>;
-  saveEntries(feedId: string, entries: NormalizedEntry[]): Promise<void>;
+  /** Upserts entries and records them as present in the feed at `seenAt`. */
+  saveEntries(feedId: string, entries: NormalizedEntry[], seenAt: Date): Promise<void>;
   recordSuccess(
     feed: DueFeed,
     result: {
@@ -25,8 +29,17 @@ export type FeedRepository = {
       metadata: FeedMetadata | null;
     },
   ): Promise<void>;
+  /** Deletes old entries that have left their feeds; returns how many. */
+  pruneEntries(policy: RetentionPolicy): Promise<number>;
   recordFailure(
     feed: DueFeed,
     result: { now: Date; nextFetchAt: Date; message: string },
   ): Promise<void>;
+};
+
+export type RetentionPolicy = {
+  /** Read entries are kept this many days after they were first seen. */
+  readDays: number;
+  /** Unread entries are kept this many days after they were first seen. */
+  unreadDays: number;
 };

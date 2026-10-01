@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { markAllRead } from "@/features/entries/actions";
 import { EntryList } from "@/features/entries/entry-list";
 import { EntryReader } from "@/features/entries/entry-reader";
+import { MarkAllReadButton } from "@/features/entries/mark-all-read-button";
 import { getEntry, getSidebarData, listEntries } from "@/features/entries/queries";
 import { parseViewParams, viewHref, type ViewParams } from "@/features/entries/view-params";
 
@@ -37,12 +37,14 @@ export default async function ReaderPage({
             {scope.title}
           </h1>
           <p className="pane-meta">{scope.meta}</p>
-          {scope.canMarkAllRead ? (
-            <form action={markAllRead.bind(null, view.feedId)}>
-              <button type="submit" className="yev-button yev-button-text">
-                Mark all as read
-              </button>
-            </form>
+          {scope.unread > 0 ? (
+            <MarkAllReadButton
+              // A fresh dialog per scope, so a pending state never leaks across views.
+              key={view.feedId ?? "all"}
+              feedId={view.feedId}
+              scopeLabel={view.feedId ? scope.title : "all your feeds"}
+              unread={scope.unread}
+            />
           ) : null}
         </header>
 
@@ -82,14 +84,14 @@ export default async function ReaderPage({
 function describeScope(
   view: ViewParams,
   sidebar: Awaited<ReturnType<typeof getSidebarData>>,
-): { title: string; meta: string; canMarkAllRead: boolean } {
+): { title: string; meta: string; unread: number } {
   if (view.feedId) {
     const feed = sidebar.feeds.find((candidate) => candidate.id === view.feedId);
     const unread = feed?.unread ?? 0;
     return {
       title: feed?.name ?? "Unknown feed",
       meta: `${unread} unread`,
-      canMarkAllRead: unread > 0,
+      unread,
     };
   }
   switch (view.filter) {
@@ -97,15 +99,16 @@ function describeScope(
       return {
         title: "Unread",
         meta: `${sidebar.unread} unread`,
-        canMarkAllRead: sidebar.unread > 0,
+        unread: sidebar.unread,
       };
     case "starred":
-      return { title: "Starred", meta: `${sidebar.starred} starred`, canMarkAllRead: false };
+      // Starred is a collection, not an inbox: no "mark all as read" here.
+      return { title: "Starred", meta: `${sidebar.starred} starred`, unread: 0 };
     default:
       return {
         title: "All entries",
         meta: `${sidebar.total} entries · ${sidebar.unread} unread`,
-        canMarkAllRead: sidebar.unread > 0,
+        unread: sidebar.unread,
       };
   }
 }
