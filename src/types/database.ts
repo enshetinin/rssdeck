@@ -84,6 +84,7 @@ export type Database = {
       };
       feeds: {
         Row: {
+          consecutive_failure_count: number;
           created_at: string;
           description: string | null;
           etag: string | null;
@@ -102,6 +103,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          consecutive_failure_count?: number;
           created_at?: string;
           description?: string | null;
           etag?: string | null;
@@ -120,6 +122,7 @@ export type Database = {
           user_id?: string;
         };
         Update: {
+          consecutive_failure_count?: number;
           created_at?: string;
           description?: string | null;
           etag?: string | null;

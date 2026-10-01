@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Example &amp; Co</title>
+    <link>https://blog.example.test/</link>
+    <atom:link href="https://blog.example.test/feed.xml" rel="self" type="application/rss+xml"/>
+    <description>Notes about &lt;b&gt;things&lt;/b&gt;</description>
+    <image>
+      <url>/logo.png</url>
+      <title>Example</title>
+      <link>https://blog.example.test/</link>
+    </image>
+    <item>
+      <title><![CDATA[First <em>post</em>]]></title>
+      <link>https://blog.example.test/first</link>
+      <guid isPermaLink="false">12345</guid>
+      <dc:creator>Ada Example</dc:creator>
+      <pubDate>Wed, 01 Oct 2026 10:00:00 +0000</pubDate>
+      <description><![CDATA[<p>Summary</p>]]></description>
+      <content:encoded><![CDATA[<p>Full <script>alert(1)</script> content</p>]]></content:encoded>
+    </item>
+    <item>
+      <title>Relative link, no guid</title>
+      <link>/second</link>
+      <pubDate>not a date</pubDate>
+      <description>&lt;p&gt;Escaped HTML&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Unsafe link</title>
+      <link>javascript:alert(1)</link>
+      <guid>unsafe-1</guid>
+    </item>
+    <item>
+      <title>Duplicate of first</title>
+      <guid isPermaLink="false">12345</guid>
+    </item>
+    <item>
+      <description>No title, no link, no guid</description>
+    </item>
+  </channel>
+</rss>

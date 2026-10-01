@@ -204,7 +204,7 @@ Fetching must:
 
 Normalize feed formats into the internal domain types in `src/lib/rss/types.ts` before persistence.
 
-Ingestion runs as `npm run ingest` (`scripts/ingest-feeds.ts`), scheduled by a Render cron job with server-only credentials.
+Ingestion runs as `npm run ingest` (`scripts/ingest-feeds.ts`), scheduled by a Render cron job with server-only credentials. Fetching, parsing and the network guard live in `src/lib/rss/`; orchestration, scheduling and persistence in `src/features/ingestion/`. Error messages stored in `feeds.last_error` or logged must never contain feed URLs or response bodies.
 
 Ingestion operations must be idempotent.
 

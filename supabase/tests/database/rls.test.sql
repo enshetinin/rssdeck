@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(20);
 
 -- Fixtures (as the migration owner, bypassing RLS) -------------------------
 
@@ -87,6 +87,12 @@ select is_empty(
 );
 
 select throws_ok(
+  $$update public.feeds set consecutive_failure_count = 0 where id = 'aaaaaaaa-1111-4000-8000-000000000001'$$,
+  '42501', null,
+  'Alice cannot reset the failure counter'
+);
+
+select throws_ok(
   $$insert into public.entries (feed_id, external_id) values ('aaaaaaaa-1111-4000-8000-000000000001', 'forged')$$,
   '42501', null,
   'Alice cannot write entries directly'
@@ -127,6 +133,27 @@ select throws_ok(
   $$insert into public.feeds (user_id, feed_url) values ('aaaaaaaa-0000-4000-8000-000000000001', 'file:///etc/passwd')$$,
   '23514', null,
   'Only http(s) feed URLs are accepted'
+);
+
+-- updated_at only moves when a row actually changes (ingestion re-upserts
+-- unchanged entries on every fetch).
+alter table public.entries disable trigger entries_set_updated_at;
+update public.entries set updated_at = '2000-01-01' where id = 'aaaaaaaa-2222-4000-8000-000000000001';
+alter table public.entries enable trigger entries_set_updated_at;
+update public.entries set external_id = external_id where id = 'aaaaaaaa-2222-4000-8000-000000000001';
+
+select is(
+  (select updated_at from public.entries where id = 'aaaaaaaa-2222-4000-8000-000000000001'),
+  '2000-01-01'::timestamptz,
+  'A no-op update keeps updated_at'
+);
+
+update public.entries set title = 'Changed' where id = 'aaaaaaaa-2222-4000-8000-000000000001';
+
+select isnt(
+  (select updated_at from public.entries where id = 'aaaaaaaa-2222-4000-8000-000000000001'),
+  '2000-01-01'::timestamptz,
+  'A real change bumps updated_at'
 );
 
 select * from finish();

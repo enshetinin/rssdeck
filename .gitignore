@@ -34,6 +34,8 @@ signing_keys.json
 # Supabase local state (also covered by supabase/.gitignore)
 supabase/.branches/
 supabase/.temp/
+# Saved SQL from local Supabase Studio
+supabase/snippets/
 
 # Logs
 *.log

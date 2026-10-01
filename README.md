@@ -2,7 +2,7 @@
 
 A private, self-hostable RSS/Atom dashboard built with Next.js, Supabase and Render.
 
-> Status: project foundation. Feed fetching, parsing and the reading UI are not implemented yet.
+> Status: feed ingestion works (`npm run ingest`). Sign-in, feed management and the reading UI are not implemented yet.
 
 ## Stack
 
@@ -52,11 +52,23 @@ First-time Playwright setup: `npx playwright install chromium`.
 
 The schema lives exclusively in `supabase/migrations/`. Every change is a new migration, followed by `npm run db:types`.
 
-- `feeds`: a user's subscriptions, with HTTP cache validators and fetch scheduling.
+- `feeds`: a user's subscriptions, with HTTP cache validators, fetch scheduling and failure backoff.
 - `entries`: items ingested from feeds, unique per `(feed_id, external_id)`; written only by the ingestion job.
 - `entry_states`: per-user read and starred timestamps.
 
 RLS limits every authenticated user to their own feeds, the entries of those feeds, and their own entry state. Column-level grants stop users from editing ingestion bookkeeping (ETag, schedule, errors). `anon` has no access.
+
+## Feed ingestion
+
+`npm run ingest` processes every feed whose `next_fetch_at` has passed:
+
+1. Fetch with a 15 s timeout, a 5 MB limit, `If-None-Match` / `If-Modified-Since`, and redirects followed manually (max 5).
+2. Refuse hosts that resolve to private, loopback or link-local addresses, so feed URLs cannot reach internal services.
+3. Parse RSS 2.0, RSS 1.0 or Atom into `src/lib/rss/types.ts`, keeping only http(s) links.
+4. Upsert entries on `(feed_id, external_id)`, so re-running is idempotent.
+5. Schedule the next fetch: the refresh interval on success, exponential backoff (max 24 h) on failure.
+
+A broken feed records a short `last_error` (never its URL, which may contain tokens) and never stops the run. Feed HTML is stored as received; it must be sanitized before rendering.
 
 ## Project structure
 
@@ -64,7 +76,7 @@ RLS limits every authenticated user to their own feeds, the entries of those fee
 src/
   app/              routes and layouts
   components/       reusable presentation components
-  features/         domain-oriented application functionality
+  features/         domain-oriented application functionality (ingestion/)
   lib/rss/          feed fetching, parsing and normalization (no persistence)
   lib/supabase/     browser, server and service-role clients
   styles/yev/       vendored yev-design foundations (do not edit)

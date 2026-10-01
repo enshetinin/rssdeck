@@ -1,28 +1,32 @@
 // Feed ingestion entry point, run on a schedule by a Render cron job:
 //   npm run ingest
 //
-// Runs with the server-only service-role client because it works across all
-// users' feeds. Fetching and parsing are not implemented yet; for now this
-// verifies configuration and reports which feeds are due.
+// Uses the server-only service-role client because it works across all users'
+// feeds and writes entries, which users cannot.
 
+import { createFeedRepository } from "@/features/ingestion/feed-repository";
+import { runIngestion } from "@/features/ingestion/run-ingestion";
+import { fetchFeed } from "@/lib/rss/fetch";
+import { parseFeed } from "@/lib/rss/parse";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 async function main(): Promise<void> {
-  const supabase = createAdminClient();
+  const startedAt = Date.now();
+  const summary = await runIngestion({
+    repository: createFeedRepository(createAdminClient()),
+    fetchFeed: (url, validators) => fetchFeed(url, validators),
+    parseFeed,
+  });
 
-  const { data: dueFeeds, error } = await supabase
-    .from("feeds")
-    .select("id")
-    .lte("next_fetch_at", new Date().toISOString());
-
-  if (error) {
-    throw new Error(`Could not load due feeds: ${error.message}`);
-  }
-
-  console.info(`${dueFeeds.length} feed(s) due. Fetching is not implemented yet.`);
+  console.info(
+    `Ingestion finished in ${Date.now() - startedAt} ms: ${summary.processed} processed, ` +
+      `${summary.updated} updated, ${summary["not-modified"]} not modified, ${summary.failed} failed.`,
+  );
 }
 
+// Individual feed failures are expected and recorded per feed; only a failure
+// of the run itself (e.g. the database is unreachable) fails the job.
 main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
+  console.error("Ingestion run failed:", error instanceof Error ? error.message : error);
   process.exitCode = 1;
 });
