@@ -36,7 +36,18 @@ export async function updateSession(request: NextRequest) {
 
   // Validates the JWT and refreshes an expiring session. Do not put code
   // between client creation and this call.
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
 
-  return response;
+  return { response, isSignedIn: Boolean(data?.claims) };
+}
+
+/** A redirect that keeps any session cookies the refresh just wrote. */
+export function redirectWithSession(from: NextResponse, target: URL) {
+  const redirect = NextResponse.redirect(target);
+  for (const cookie of from.cookies.getAll()) {
+    redirect.cookies.set(cookie);
+  }
+  const cacheControl = from.headers.get("cache-control");
+  if (cacheControl) redirect.headers.set("cache-control", cacheControl);
+  return redirect;
 }

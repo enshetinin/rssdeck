@@ -55,7 +55,8 @@ export function escapeHtml(value: string): string {
 
 /** Plain text for titles and names, which feeds often deliver as HTML. */
 export function htmlToPlainText(value: string): string {
-  return decodeEntities(value.replace(/<[^>]*>/g, " "))
+  const withoutCode = value.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ");
+  return decodeEntities(withoutCode.replace(/<[^>]*>/g, " "))
     .replace(/\s+/g, " ")
     .trim();
 }

@@ -1,29 +1,34 @@
-/* RSSDeck dialect of yev-design: application / operational.
+/* RSSDeck dialect of yev-design: application / operational, with a reading
+   pane that borrows from the reading dialect (Newsreader titles, a measure).
    Foundations live in the `yev` cascade layers; everything in this file is
    unlayered and therefore overrides them without specificity fights. */
 
 @import "../styles/yev/foundations/index.css";
+@import "../styles/yev/patterns/index.css";
 
 :root {
   --yev-font-sans: var(--font-atkinson-next), system-ui, sans-serif;
+  --yev-font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
 
   /* Application scale: page titles around 1.5–2.5× body. */
   --yev-h1-size: 1.75rem;
   --yev-h2-size: 1.375rem;
   --yev-h3-size: 1.125rem;
   --yev-h4-size: var(--yev-text-body);
+
+  --sidebar-width: 16rem;
+  --entry-pane-width: minmax(21rem, 27rem);
+  --pane-pad: var(--yev-space-5);
 }
 
 body {
   min-block-size: 100dvb;
-  display: flex;
-  flex-direction: column;
 }
 
-/* Shell ---------------------------------------------------------------------- */
-
-.shell-header {
-  padding-block: var(--yev-space-4);
+/* Text-emphasis buttons sit on the text edge like links; the 44px target
+   height from the pattern is kept. */
+.yev-button-text {
+  --yev-button-pad-inline: 0;
 }
 
 .shell-wordmark {
@@ -33,9 +38,10 @@ body {
   font-size: var(--yev-text-ui);
   font-weight: 500;
   letter-spacing: 0.01em;
+  text-decoration: none;
 }
 
-/* Identity notation only: carries no meaning and is hidden from AT. */
+/* Identity notation only: carries no meaning. */
 .shell-wordmark::before {
   content: "";
   inline-size: 0.5rem;
@@ -43,16 +49,30 @@ body {
   background: var(--yev-signal);
 }
 
+.section-heading {
+  font-size: var(--yev-h3-size);
+}
+
+.section-count {
+  color: var(--yev-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sign-in page ----------------------------------------------------------------- */
+
+.shell-header {
+  padding-block: var(--yev-space-4);
+}
+
 .shell-main {
-  flex: 1;
   padding-block: var(--yev-space-7) var(--yev-space-9);
 }
 
-.shell-main:focus {
+.shell-main:focus,
+.app-main:focus {
   outline: none;
 }
 
-/* Context / content: an unequal split that collapses to one column. */
 .shell-layout {
   display: grid;
   gap: var(--yev-space-5) var(--yev-gutter);
@@ -68,11 +88,556 @@ body {
   padding-block-start: var(--yev-space-2);
 }
 
-.empty-state {
-  --yev-stack-gap: var(--yev-space-3);
-  max-inline-size: var(--yev-measure);
+/* App shell -------------------------------------------------------------------
+   < 48rem   one column; the sidebar is a disclosure; the page scrolls.
+   ≥ 48rem   sidebar + one pane (list, or the reader when an entry is open).
+   ≥ 70rem   sidebar | entry list | reader, each column scrolling on its own. */
+
+@media (min-width: 48rem) {
+  .app-shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    block-size: 100dvb;
+  }
+
+  .app-sidebar {
+    overflow-y: auto;
+    border-inline-end: 1px solid var(--yev-rule);
+  }
+
+  .app-main {
+    overflow-y: auto;
+  }
 }
 
-.empty-state p {
+/* Sidebar ---------------------------------------------------------------------- */
+
+.app-sidebar-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--yev-space-4);
+  padding: var(--yev-space-3) var(--pane-pad);
+}
+
+.app-sidebar-content {
+  display: grid;
+  gap: var(--yev-space-6);
+  padding: var(--yev-space-2) var(--pane-pad) var(--yev-space-6);
+}
+
+@media (max-width: 47.99rem) {
+  .app-sidebar {
+    border-block-end: 1px solid var(--yev-rule);
+  }
+
+  .app-sidebar:not([data-open]) .app-sidebar-content {
+    display: none;
+  }
+}
+
+@media (min-width: 48rem) {
+  .app-sidebar-toggle {
+    display: none;
+  }
+
+  .app-sidebar-bar {
+    padding-block: var(--yev-space-5) var(--yev-space-3);
+  }
+}
+
+.sidebar-heading {
+  margin-block-end: var(--yev-space-2);
+  font-size: var(--yev-text-meta);
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--yev-muted);
+}
+
+.sidebar-list {
+  display: grid;
+}
+
+.sidebar-manage {
+  margin-block-start: var(--yev-space-2);
+}
+
+/* Navigation links read as navigation by position; the current one is drawn
+   with an ink edge bar (a shape, not a colour), per the current-location
+   contract. */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--yev-space-3);
+  min-block-size: 2.25rem;
+  padding-inline: var(--yev-space-3) var(--yev-space-2);
+  margin-inline: calc(-1 * var(--yev-space-3)) calc(-1 * var(--yev-space-2));
+  border-inline-start: 3px solid transparent;
+  font-size: var(--yev-text-ui);
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .sidebar-link:hover {
+    background: var(--yev-wash);
+  }
+}
+
+.sidebar-link[aria-current="page"] {
+  border-inline-start-color: var(--yev-fg);
+  background: var(--yev-wash);
+  font-weight: 500;
+}
+
+.sidebar-link-label {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-count {
+  color: var(--yev-muted);
+  font-size: var(--yev-text-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar-failing {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.1em;
+  block-size: 1.1em;
+  margin-inline-end: var(--yev-space-2);
+  border: 1.5px solid var(--yev-error);
+  border-radius: var(--yev-radius-round);
+  color: var(--yev-error);
+  font-size: 0.75em;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sidebar-note {
+  color: var(--yev-muted);
+  font-size: var(--yev-text-ui);
+}
+
+.sidebar-account {
+  display: grid;
+  gap: var(--yev-space-1);
+  font-size: var(--yev-text-ui);
+}
+
+.sidebar-email {
+  color: var(--yev-muted);
+  font-size: var(--yev-text-meta);
+  overflow-wrap: anywhere;
+}
+
+/* Reader: list + reading pane -------------------------------------------------- */
+
+.reader {
+  display: grid;
+}
+
+@media (min-width: 70rem) {
+  .reader {
+    grid-template-columns: var(--entry-pane-width) minmax(0, 1fr);
+    block-size: 100%;
+  }
+
+  .entry-pane,
+  .reading-pane {
+    overflow-y: auto;
+  }
+
+  .entry-pane {
+    border-inline-end: 1px solid var(--yev-rule);
+  }
+
+  .reader-back {
+    display: none;
+  }
+}
+
+/* Narrower than three columns: show either the list or the open entry. */
+@media (max-width: 69.99rem) {
+  .reader[data-has-entry] .entry-pane,
+  .reader:not([data-has-entry]) .reading-pane {
+    display: none;
+  }
+}
+
+.pane-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--yev-space-4);
+  padding: var(--yev-space-5) var(--pane-pad) var(--yev-space-3);
+}
+
+.pane-title {
+  flex-basis: 100%;
+  font-size: var(--yev-h2-size);
+}
+
+.pane-meta {
+  margin-inline-end: auto;
+  color: var(--yev-muted);
+  font-size: var(--yev-text-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.pane-empty {
+  padding: var(--yev-space-4) var(--pane-pad);
+  color: var(--yev-muted);
+}
+
+.pane-pagination {
+  padding: var(--yev-space-4) var(--pane-pad) var(--yev-space-6);
+  font-size: var(--yev-text-ui);
+}
+
+.entry-list {
+  display: grid;
+  padding-block-end: var(--yev-space-4);
+}
+
+/* Each entry is one link; the open entry gets the same ink edge bar as the
+   sidebar's current item. Unread entries are marked by weight and a dot. */
+.entry-link {
+  display: grid;
+  gap: var(--yev-space-1);
+  padding: var(--yev-space-3) var(--pane-pad) var(--yev-space-3) calc(var(--pane-pad) - 3px);
+  border-inline-start: 3px solid transparent;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .entry-link:hover {
+    background: var(--yev-wash);
+  }
+
+  .entry-link:hover .entry-link-title {
+    text-decoration-line: underline;
+  }
+}
+
+.entry-link[aria-current="page"] {
+  border-inline-start-color: var(--yev-fg);
+  background: var(--yev-wash);
+}
+
+.entry-link:focus-visible {
+  outline-offset: -3px;
+}
+
+.entry-link-title {
+  font-weight: 500;
+  line-height: 1.35;
+  text-underline-offset: 0.2em;
+}
+
+.entry-link[data-read] .entry-link-title {
+  font-weight: 400;
+  color: var(--yev-muted);
+}
+
+.entry-unread-marker {
+  display: inline-block;
+  inline-size: 0.45rem;
+  block-size: 0.45rem;
+  margin-inline-end: var(--yev-space-2);
+  border-radius: var(--yev-radius-round);
+  background: var(--yev-fg);
+  vertical-align: 0.15em;
+}
+
+.entry-star {
+  color: var(--yev-fg);
+}
+
+.entry-link-meta {
+  color: var(--yev-muted);
+  font-size: var(--yev-text-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.entry-link-excerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  color: var(--yev-muted);
+  font-size: var(--yev-text-ui);
+  line-height: 1.45;
+}
+
+/* Reading pane ----------------------------------------------------------------- */
+
+.reading-pane-empty {
+  padding: var(--yev-space-7) var(--pane-pad);
+  color: var(--yev-muted);
+}
+
+.reader-article {
+  --yev-measure: 66ch;
+  padding: var(--yev-space-5) var(--pane-pad) var(--yev-space-9);
+}
+
+@media (min-width: 70rem) {
+  .reader-article {
+    padding-inline: var(--yev-space-7);
+  }
+}
+
+.reader-back {
+  margin-block-end: var(--yev-space-5);
+  font-size: var(--yev-text-ui);
+}
+
+.reader-back a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--yev-target);
+}
+
+.reader-header {
+  display: grid;
+  gap: var(--yev-space-2);
+  max-inline-size: var(--yev-measure);
+  margin-block-end: var(--yev-space-6);
+}
+
+.reader-feed {
+  font-size: var(--yev-text-ui);
+}
+
+.reader-title {
+  font-family: var(--yev-font-serif);
+  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.5rem);
+  font-weight: 500;
+  line-height: 1.12;
+}
+
+.reader-title:focus {
+  outline: none;
+}
+
+.reader-meta {
+  color: var(--yev-muted);
+  font-size: var(--yev-text-ui);
+}
+
+.reader-meta:empty {
+  display: none;
+}
+
+.reader-actions {
+  margin-block-start: var(--yev-space-3);
+  font-size: var(--yev-text-ui);
+}
+
+/* A pressed toggle is filled: a change of shape, not only of colour. */
+.reader-actions [aria-pressed="true"] {
+  background-color: var(--yev-fg);
+  border-color: var(--yev-fg);
+  color: var(--yev-bg);
+}
+
+.reader-original {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--yev-target);
+}
+
+.reader-content {
+  max-inline-size: var(--yev-measure);
+  font-size: 1.125rem;
+  line-height: 1.65;
+}
+
+.reader-content :is(h1, h2, h3, h4, h5, h6) {
+  font-size: var(--yev-h3-size);
+}
+
+.reader-content :is(img, video, picture) {
+  max-inline-size: 100%;
+  block-size: auto;
+}
+
+.reader-content pre {
+  padding: var(--yev-space-4);
+  background: var(--yev-wash);
+  font-size: 0.875rem;
+}
+
+.reader-content blockquote {
+  padding-inline-start: var(--yev-space-4);
+  border-inline-start: 3px solid var(--yev-rule);
+  color: var(--yev-muted);
+}
+
+.reader-content table {
+  display: block;
+  max-inline-size: 100%;
+  overflow-x: auto;
+}
+
+.reader-content :is(td, th) {
+  border-block-end: 1px solid var(--yev-rule);
+}
+
+.reader-empty {
+  color: var(--yev-muted);
+}
+
+/* Manage feeds ----------------------------------------------------------------- */
+
+.manage-page {
+  display: grid;
+  gap: var(--yev-space-7) var(--yev-space-8);
+  padding: var(--yev-space-5) var(--pane-pad) var(--yev-space-9);
+}
+
+@media (min-width: 64rem) {
+  .manage-page {
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+    padding-inline: var(--yev-space-7);
+  }
+}
+
+.feeds-section {
+  display: grid;
+  gap: var(--yev-space-5);
+  align-content: start;
+}
+
+.feeds-section > h2:focus {
+  outline: none;
+}
+
+.feed-list {
+  display: grid;
+  gap: var(--yev-space-6);
+}
+
+.feed-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--yev-space-2) var(--yev-space-5);
+}
+
+.feed-row-main {
+  display: grid;
+  gap: var(--yev-space-1);
+  flex: 1 1 20rem;
+  min-inline-size: 0;
+}
+
+.feed-name {
+  font-weight: 500;
+}
+
+.feed-url {
+  font-family: var(--yev-font-mono);
+  font-size: var(--yev-text-meta);
+  color: var(--yev-muted);
+  overflow-wrap: anywhere;
+}
+
+.feed-status {
+  font-size: var(--yev-text-ui);
+  color: var(--yev-muted);
+}
+
+.feed-status-failing {
+  color: var(--yev-error);
+}
+
+.empty-note {
+  color: var(--yev-muted);
+}
+
+/* Forms ------------------------------------------------------------------------ */
+
+.form-stack {
+  display: grid;
+  gap: var(--yev-space-5);
+  max-inline-size: 28rem;
+}
+
+.field {
+  display: grid;
+  gap: var(--yev-space-2);
+}
+
+.field-label {
+  font-size: var(--yev-text-ui);
+  font-weight: 500;
+}
+
+.field-hint {
+  font-size: var(--yev-text-meta);
+  line-height: 1.4;
+  color: var(--yev-muted);
+}
+
+.field-control {
+  inline-size: 100%;
+  min-block-size: var(--yev-target);
+  padding: var(--yev-space-2) var(--yev-space-3);
+  border: 1px solid var(--yev-edge);
+  border-radius: var(--yev-radius-control);
+  background: transparent;
+}
+
+.field-control[aria-invalid="true"] {
+  border-color: var(--yev-error);
+  border-inline-start-width: 4px;
+}
+
+/* Errors carry words, an "Error:" prefix and an edge, never colour alone. */
+.field-error,
+.form-error {
+  color: var(--yev-error);
+  font-size: var(--yev-text-ui);
+}
+
+.form-error {
+  padding-inline-start: var(--yev-space-3);
+  border-inline-start: 4px solid var(--yev-error);
+}
+
+.field-error-prefix {
+  font-weight: 600;
+}
+
+.form-status:empty {
+  display: none;
+}
+
+/* Dialog ----------------------------------------------------------------------- */
+
+.confirm-dialog {
+  inline-size: min(32rem, calc(100vi - 2 * var(--yev-page-margin)));
+  padding: 0;
+  border: 1px solid var(--yev-edge);
+  border-radius: var(--yev-radius-surface);
+  background: var(--yev-bg);
+  color: var(--yev-fg);
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.25);
+}
+
+.confirm-dialog::backdrop {
+  background: rgb(17 16 14 / 0.55);
+}
+
+.confirm-dialog-body {
+  display: grid;
+  gap: var(--yev-space-5);
+  padding: var(--yev-space-6);
 }

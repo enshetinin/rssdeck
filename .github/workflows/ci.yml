@@ -12,17 +12,17 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# Placeholders only. The app shell needs a URL and key to exist, but CI never
-# talks to a real Supabase project.
 env:
-  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-publishable-key
   NEXT_TELEMETRY_DISABLED: "1"
 
 jobs:
   checks:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
+    # Placeholders only: the build needs the variables to exist, nothing more.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-publishable-key
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -47,6 +47,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      # Auth, REST and the database only; migrations and seed are applied.
+      - run: >-
+          npx supabase start
+          -x studio,imgproxy,logflare,vector,edge-runtime,storage-api,realtime,mailpit,supavisor,postgres-meta
+      # The local stack's well-known development keys, never real credentials.
+      - name: Write .env.local for the local stack
+        run: |
+          eval "$(npx supabase status -o env | grep -E '^(API_URL|PUBLISHABLE_KEY|SECRET_KEY)=')"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SECRET_KEY"
+          } > .env.local
       - run: npm run build
       - run: npm run test:e2e
       - if: failure()

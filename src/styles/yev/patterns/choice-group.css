@@ -1,0 +1,223 @@
+/* Yev Design — choice group pattern
+   Stability: EXPERIMENTAL (patterns v0.2.0). The semantic and mechanical core
+   (native radios, fieldset/legend, the clipped focusable input, projected
+   focus, native keyboard behaviour, the checked-state hook, forced colors) has
+   held in two dialects, operational and identity. Two consumers are not enough
+   to freeze it: .yev-choices, .yev-choice and every --yev-choice* dial may
+   still change, and the optional mark API in particular is not frozen. Prefer
+   the checked-state hook plus local CSS over the mark dials where either works.
+   No visual defaults will be added to make it look more complete.
+
+   A recipe for a set of mutually exclusive options built on native radio
+   inputs. The browser supplies everything that matters: one tab stop for the
+   group, arrow keys to move and select, Space to select, the name-based
+   grouping, form submission. This file only makes the labels the visible
+   choices, projects focus onto them, and offers a hook for drawing selection.
+
+     <fieldset class="yev-choices">
+       <legend>Density</legend>
+       <label class="yev-choice">
+         <input type="radio" name="density" value="compact">
+         <span>Compact</span>
+       </label>
+       <label class="yev-choice">
+         <input type="radio" name="density" value="comfortable" checked>
+         <span>Comfortable</span>
+       </label>
+     </fieldset>
+
+   The legend is required: it is the group's accessible name, and a set of radios
+   without one is announced as unrelated controls. When the design supplies its
+   own visible title elsewhere, make the legend the title, or hide it with
+   .yev-sr-only, which this file leaves alone:
+
+     <legend class="yev-sr-only">Density</legend>
+
+   What is NOT here, on purpose: no SegmentedControl, no roving tabindex, no
+   role="radio" replicas, no JavaScript. The inputs are hidden with the same
+   clipping technique as .yev-sr-only (never display:none, never
+   visibility:hidden, never disabled-looking), so they stay focusable and stay
+   in the accessibility tree.
+
+   Presentation is the dialect's. The choice gets no display, alignment,
+   padding, radius or hover from this file: the dialect decides whether a choice
+   is a flex row, a grid cell, a block or an inline box, how much room it has,
+   and how it reacts to a pointer. Inside the default group a choice is a flex
+   item, so its minimum height (--yev-choice-min-block) applies; a dialect that
+   makes the group something other than flex or grid gives the choice a
+   non-inline display of its own if it wants that minimum.
+
+   Hover belongs on the visible choice, never on the radio. The input is a
+   clipped 1px box that the pointer never meets, so `input:hover` does nothing;
+   style `.yev-choice:hover` instead, inside `@media (hover: hover)`, and leave
+   disabled choices out:
+
+     @media (hover: hover) {
+       .yev-choice:hover:not(:has(> input:disabled)) { … }
+     }
+
+   Selection. `.yev-choice:has(> input:checked)` is the selected-state hook.
+   A dialect must give the selected state a non-colour shape; with no dial set
+   and no local rule, nothing marks the selection. There are two supported
+   strategies, for two different problems. Pick one; the pattern does not try
+   to make one mechanism solve both.
+
+   1. Box-relative mark: edge bars, structural selection marks, lines along
+      the choice's box. The pattern draws one optional shape for this, the
+      "mark": a box on the choice (::after) that exists only while its radio
+      is checked, so an unselected choice has no mark at all. The mark has no
+      geometry of its own until a dialect places it with the dials below.
+
+      The mark is absolutely positioned, so each axis needs either two
+      opposing insets with size auto (the mark stretches between them), or
+      one inset and an explicit size. Size defaults to auto: set both insets
+      of an axis and it stretches; set neither and the mark stays 0 on that
+      axis, which is what keeps it invisible until placed.
+
+        edge bar   along the inline-start edge, full height
+                   --yev-choice-mark-inset-inline: 0 auto;
+                   --yev-choice-mark-inset-block: 0;
+                   --yev-choice-mark-inline-size: 3px;
+                   --yev-choice-mark-block-size: auto;
+
+        box line   along the block-end edge, full width
+                   --yev-choice-mark-inset-inline: 0;
+                   --yev-choice-mark-inset-block: auto 0;
+                   --yev-choice-mark-inline-size: auto;
+                   --yev-choice-mark-block-size: 2px;
+
+      The size lines set to auto restate the default; keep them so the recipe
+      still works under an ancestor that sets a size dial for another use.
+      Do not set a fixed size on an axis that has two opposing insets: the
+      fixed size wins, the end inset is ignored, and the mark stops stretching.
+
+      The mark is positioned against the choice's box, not the text in it. It
+      cannot follow a baseline: with text scaled up, or a label that wraps, a
+      box line drifts away from the words.
+
+   2. Text-relative selection: a mark that must follow the text baseline,
+      especially under text scaling or wrapping. Leave the mark unset and draw
+      it locally with text decoration, e.g.
+
+        .yev-choice:has(> input:checked) > span {
+          text-decoration-line: underline;
+          text-decoration-thickness: 2px;
+          text-underline-offset: 0.3em;
+        }
+
+      which also survives forced colors on its own. With no mark dial set,
+      the checked mark is an empty 0-by-0 box that paints nothing, so a
+      dialect can ignore the pseudo-element entirely.
+
+   Any selected treatment drawn locally (a fill, a glyph, an underline) keeps a
+   non-colour channel and a forced-colors fallback of its own.
+
+   Focus is projected: the native input is invisible, so the ring the foundation
+   would draw on it is drawn on the whole choice, with the foundation's own
+   width, colour and offset, and only for keyboard focus.
+
+   Dials. Set on the group, the choice, or any ancestor; none is required.
+
+     --yev-choices-direction   row (default) or column
+     --yev-choices-gap         between choices; 0 by default
+     --yev-choices-legend-gap  between legend and choices
+     --yev-choice-min-block    minimum height; defaults to --yev-target. Applies
+                               while the choice is not an inline box.
+     --yev-choice-mark-ink     defaults to --yev-fg. Yev Signal may be used, but
+                               on paper it is 2.9:1, under the 3:1 a required
+                               graphic needs: pair it with foreground ink.
+     --yev-choice-mark-inset-inline   default auto
+     --yev-choice-mark-inset-block    default auto
+     --yev-choice-mark-inline-size    default auto (0 unless both inline
+                                      insets are set)
+     --yev-choice-mark-block-size     default auto (0 unless both block
+                                      insets are set)
+                               the geometry of the mark, above */
+
+.yev-choices {
+  display: flex;
+  flex-direction: var(--yev-choices-direction, row);
+  flex-wrap: wrap;
+  gap: var(--yev-choices-gap, 0);
+}
+
+/* Legend: the UA gives it a two-pixel inline pad and lets the fieldset's own
+   border interrupt. Neither is wanted. .yev-sr-only legends are left alone so
+   their clip is not disturbed. */
+.yev-choices > legend:not(.yev-sr-only) {
+  padding: 0;
+  margin-block-end: var(--yev-choices-legend-gap, var(--yev-space-2));
+}
+
+.yev-choice {
+  position: relative; /* anchors the hidden input and the mark */
+  min-block-size: var(--yev-choice-min-block, var(--yev-target));
+  cursor: pointer;
+}
+
+/* The radio: visually hidden, still focusable and announced. Same technique and
+   same reasons as .yev-sr-only in interactions.css. */
+.yev-choice > input[type="radio"] {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The mark: absent until checked, and without a size until a dialect places
+   it. Sizes default to auto, not 0: with auto insets an empty absolutely
+   positioned box shrinks to 0, so the mark stays invisible until placed, yet
+   two opposing insets stretch it without also needing a size. (A 0 default
+   pinned the box line recipe to 0px wide.) */
+.yev-choice::after {
+  content: "";
+  display: none;
+  position: absolute;
+  inset-inline: var(--yev-choice-mark-inset-inline, auto);
+  inset-block: var(--yev-choice-mark-inset-block, auto);
+  inline-size: var(--yev-choice-mark-inline-size, auto);
+  block-size: var(--yev-choice-mark-block-size, auto);
+  background-color: var(--yev-choice-mark-ink, var(--yev-fg));
+  pointer-events: none;
+}
+
+.yev-choice:has(> input:checked)::after {
+  display: block;
+}
+
+/* Focus projected from the hidden input onto the visible choice. z-index lifts
+   the ring above neighbours when choices touch (gap 0). */
+.yev-choice:has(> input:focus-visible) {
+  z-index: 1;
+  outline: var(--yev-focus-width) solid var(--yev-focus);
+  outline-offset: var(--yev-focus-offset);
+}
+
+/* Unavailable. The cursor is restated because .yev-choice sets pointer. */
+.yev-choice:has(> input:disabled) {
+  color: var(--yev-muted);
+  cursor: not-allowed;
+}
+
+/* Forced colors: the browser replaces background colors, which would erase the
+   mark. A system color keeps it: shape survives, so state is still visible.
+   Unavailable choices take the system's own disabled colour. */
+@media (forced-colors: active) {
+  .yev-choice::after {
+    background-color: CanvasText;
+  }
+
+  .yev-choice:has(> input:disabled) {
+    color: GrayText;
+  }
+
+  .yev-choice:has(> input:disabled)::after {
+    background-color: GrayText;
+  }
+}

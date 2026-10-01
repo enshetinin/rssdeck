@@ -1,5 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// The tests talk to the local Supabase stack (see tests/e2e/fixtures.ts).
+try {
+  process.loadEnvFile(".env.local");
+} catch {
+  // No .env.local: rely on the environment (CI writes one before running).
+}
+
 const port = Number(process.env.PORT ?? 3000);
 const baseURL = `http://127.0.0.1:${port}`;
 

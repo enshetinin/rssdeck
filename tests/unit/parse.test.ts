@@ -138,3 +138,12 @@ describe("parseFeed: hostile and broken input", () => {
     expect(feed.entries).toHaveLength(500);
   });
 });
+
+describe("htmlToPlainText", () => {
+  it("drops script and style contents, not just their tags", async () => {
+    const { htmlToPlainText } = await import("@/lib/rss/text");
+    expect(htmlToPlainText("<p>Hi</p><script>alert(1)</script><style>p{}</style> there")).toBe(
+      "Hi there",
+    );
+  });
+});

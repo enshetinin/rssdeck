@@ -1,0 +1,89 @@
+/* Yev Design — patterns v0.2.0
+   Small CSS recipes for visual grammar that repeats across dialects. They sit
+   above Foundations and below the project: a pattern supplies a mechanism and a
+   few dials, never a composition, and the project's own CSS still has the last
+   word.
+
+   Stability is per pattern, not per package:
+
+     Button        stable candidate   .yev-button
+                                      .yev-button-outline
+                                      .yev-button-text
+     Facts         stable candidate   .yev-facts
+     Choice group  experimental       .yev-choices
+                                      .yev-choice
+
+   Stable candidate: validated in all three dialects (operational, identity,
+   reading). Class names and documented dials are kept; changes to them are
+   breaking and will be called out. Experimental: validated in fewer dialects;
+   class names and dials may change in any release.
+
+   Behavioural contracts (Copy, Dialog, Scroll region, Field, Current location,
+   in reference/contracts/) are not patterns. They are framework-independent
+   specifications with no stylesheet here and no component or hook API, and
+   each carries its own status.
+
+   Load Foundations first. Patterns read its tokens (--yev-fg, --yev-target,
+   --yev-radius-control …) and rely on its focus ring, .yev-sr-only and reduced
+   motion; they do not import it.
+
+   Everything is placed in the cascade layer `yev.patterns`, after
+   `yev.interactions`, so a pattern can refine a foundation rule and unlayered
+   project CSS overrides both without specificity fights. The layer order is
+   repeated here so this file also works if it happens to be loaded first.
+
+   Integration warning — layers beat specificity.
+   Any unlayered CSS wins over every layered rule, whatever the selectors. That
+   is what lets a dialect adjust a pattern with a plain class, and it is also how
+   a pattern gets silently defeated. A project's own old reset, e.g.
+
+     button,
+     input {
+       font: inherit;
+       color: inherit;
+     }
+
+   is unlayered, so it beats `.yev-button { color: … }` even though a class is
+   more specific than an element: the solid button's label turns the colour of
+   the surrounding text, and nothing in devtools looks wrong until the layers are
+   inspected.
+
+   Recommended integration, lowest to highest priority:
+
+     1. Foundations   layer yev.*           (foundations/index.css)
+     2. Patterns      layer yev.patterns    (this file)
+     3. local dialect the project's own CSS, unlayered or in a layer declared
+                      after `yev`
+
+     @import "@yev/index.css";            foundations
+     @import "@yev/patterns/index.css";   patterns
+
+     local dialect after the shared layers, e.g. @import url("./dialect.css");
+
+   `@yev` is the consumer's alias for this repository: @yev/index.css is
+   foundations/index.css, @yev/patterns/index.css is this file. Order matters
+   only for the dialect: it comes after both, and whether it is unlayered or in
+   a layer after `yev`, it overrides every Yev rule.
+
+   A project that uses its own layers states the whole order once, before any
+   rules. Every project layer after `yev` outranks patterns, so only the dialect
+   belongs there:
+
+     @layer legacy, yev, dialect;
+
+   Element resets the project already had (form font/colour inheritance,
+   box-sizing, margin zeroing, fieldset reset, button and link styling)
+   duplicate Foundations. Do not carry them over unknowingly: audit the
+   project's base CSS for element selectors before adopting, and remove them.
+   If one must stay, move it into a layer before `yev` (`legacy` above): it
+   then only fills in what Foundations and patterns leave unset.
+
+   Do not fix a lost pattern rule by raising selector specificity or adding
+   !important: neither crosses a layer boundary cleanly, and both leave the
+   dialect unable to adjust the pattern afterwards. Fix the layer order. */
+
+@layer yev.tokens, yev.reset, yev.typography, yev.layout, yev.interactions, yev.patterns;
+
+@import url("./button.css") layer(yev.patterns);
+@import url("./choice-group.css") layer(yev.patterns);
+@import url("./facts.css") layer(yev.patterns);

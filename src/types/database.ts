@@ -12,6 +12,7 @@ export type Database = {
           feed_id: string;
           id: string;
           published_at: string | null;
+          sort_at: string | null;
           summary: string | null;
           title: string | null;
           updated_at: string;
@@ -25,6 +26,7 @@ export type Database = {
           feed_id: string;
           id?: string;
           published_at?: string | null;
+          sort_at?: never;
           summary?: string | null;
           title?: string | null;
           updated_at?: string;
@@ -38,6 +40,7 @@ export type Database = {
           feed_id?: string;
           id?: string;
           published_at?: string | null;
+          sort_at?: never;
           summary?: string | null;
           title?: string | null;
           updated_at?: string;
@@ -78,6 +81,13 @@ export type Database = {
             columns: ["entry_id"];
             isOneToOne: false;
             referencedRelation: "entries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "entry_states_entry_id_fkey";
+            columns: ["entry_id"];
+            isOneToOne: false;
+            referencedRelation: "entry_list";
             referencedColumns: ["id"];
           },
         ];
@@ -144,10 +154,50 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      entry_list: {
+        Row: {
+          author: string | null;
+          content: string | null;
+          excerpt_source: string | null;
+          feed_id: string | null;
+          feed_title: string | null;
+          feed_url: string | null;
+          id: string | null;
+          is_read: boolean | null;
+          is_starred: boolean | null;
+          published_at: string | null;
+          sort_at: string | null;
+          starred_at: string | null;
+          summary: string | null;
+          title: string | null;
+          url: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "entries_feed_id_fkey";
+            columns: ["feed_id"];
+            isOneToOne: false;
+            referencedRelation: "feeds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Functions: {
-      [_ in never]: never;
+      entry_counts: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          feed_id: string;
+          starred: number;
+          total: number;
+          unread: number;
+        }[];
+      };
+      mark_entries_read: { Args: { p_feed_id?: string }; Returns: number };
+      set_entry_state: {
+        Args: { p_entry_id: string; p_read?: boolean; p_starred?: boolean };
+        Returns: undefined;
+      };
     };
     Enums: {
       [_ in never]: never;

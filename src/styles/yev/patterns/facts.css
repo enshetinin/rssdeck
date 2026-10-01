@@ -1,0 +1,87 @@
+/* Yev Design — facts pattern
+   Stability: stable candidate (patterns v0.2.0), frozen. Validated in the
+   operational, identity and reading dialects. The API is exactly:
+
+     dl > div > dt + dd      the markup
+     dt                      muted
+     dd                      wraps long tokens
+     --yev-facts-columns     optional outer grid of pairs
+     --yev-facts-gap         optional gap between pairs
+
+   Nothing will be added: no pair layout, orientation, typography, dividers,
+   card styling, sizes or alignment presets. Those stay in the dialect.
+
+   A thin recipe for labelled values: a muted label and a foreground value. Not
+   a metadata layout system: no card, no divider, no orientation, no type scale.
+
+     <dl class="yev-facts">
+       <div>
+         <dt>Version</dt>
+         <dd>0.2.3</dd>
+       </div>
+       <div>
+         <dt>License</dt>
+         <dd>MIT</dd>
+       </div>
+     </dl>
+
+   Each pair sits in a <div>, which HTML allows inside <dl> and which gives every
+   label/value pair one box for the dialect to place.
+
+   What the pattern decides, and nothing else:
+
+     dt   secondary ink (--yev-muted)
+     dd   the surrounding foreground ink and size
+     dd   long tokens (hashes, paths, URLs) wrap instead of widening the page
+
+   Labels inherit the surrounding typography. Size, line height and tracking are
+   the dialect's: it sets them on `.yev-facts dt` if it wants a smaller or
+   tracked label.
+
+   Layout is the dialect's too: the pair's own grid, the gap inside a pair, and
+   whether the label sits above or beside its value. With no dials the list is a
+   single column with no gap, which renders like normal flow: pairs stacked,
+   label over value, no added space. The one optional mechanism is the outer
+   grid of pairs:
+
+     --yev-facts-columns   grid-template-columns for the pairs. Default: one.
+                           repeat(auto-fit, minmax(10rem, 1fr))  — as many as fit
+                           repeat(3, minmax(0, 1fr))             — always three
+     --yev-facts-gap       between pairs; row and column, or "row column".
+                           Default: 0.
+
+   Migrating from pre-0.1.1 Facts. Facts v0.1.1 deliberately stopped owning the
+   pair: its layout and its internal gap now belong to the dialect, and the
+   shared pair-gap dial was removed. It is not coming back. A consumer that set
+   that dial moves the value to its own pair layout, as a plain `gap`:
+
+     .project-facts > div {
+       display: grid;
+       gap: var(--yev-space-1);     previously the shared pair-gap dial
+     }
+
+   or, for a label beside its value:
+
+     .project-facts > div {
+       display: grid;
+       grid-template-columns: 8rem minmax(0, 1fr);
+       gap: var(--yev-space-3);
+     }
+
+   The outer dials (--yev-facts-columns, --yev-facts-gap) are unchanged and
+   still only place the pairs, never the label and value inside one. */
+
+.yev-facts {
+  display: grid;
+  grid-template-columns: var(--yev-facts-columns, minmax(0, 1fr));
+  gap: var(--yev-facts-gap, 0);
+}
+
+.yev-facts dt {
+  color: var(--yev-muted);
+}
+
+.yev-facts dd {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}

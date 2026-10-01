@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Atkinson_Hyperlegible_Next } from "next/font/google";
+import { Atkinson_Hyperlegible_Next, Newsreader } from "next/font/google";
 
 import "./globals.css";
 
@@ -9,6 +9,14 @@ const atkinsonNext = Atkinson_Hyperlegible_Next({
   display: "swap",
   // next/font has no metrics for this family yet; skip the synthetic fallback.
   adjustFontFallback: false,
+});
+
+// Editorial counterpoint, used only for article titles in the reader.
+const newsreader = Newsreader({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-newsreader",
+  display: "swap",
+  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {
@@ -31,19 +39,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={atkinsonNext.variable}>
+    <html lang="en" className={`${atkinsonNext.variable} ${newsreader.variable}`}>
       <body>
         <a className="yev-skip-link" href="#main">
           Skip to content
         </a>
-        <header className="shell-header">
-          <div className="yev-frame">
-            <span className="shell-wordmark">RSSDeck</span>
-          </div>
-        </header>
-        <main id="main" tabIndex={-1} className="shell-main">
-          {children}
-        </main>
+        {children}
       </body>
     </html>
   );

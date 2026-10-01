@@ -108,6 +108,8 @@ The private dashboard uses Supabase Auth.
 
 Authenticated application requests use the user's Supabase session.
 
+There is no public sign-up. `src/proxy.ts` redirects signed-out requests to `/login`, and every page and Server Action must still check the session itself (`requireUser()` in `src/features/auth/session.ts`). Post-login redirects go through `safeRedirectPath()`.
+
 Server-side privileged operations may use the Supabase service role only where required.
 
 The service-role credential must never be exposed to client-side code.
@@ -210,7 +212,7 @@ Ingestion operations must be idempotent.
 
 Do not trust feed HTML.
 
-Never render feed-provided HTML without sanitization.
+Never render feed-provided HTML without sanitization. Use `sanitizeFeedHtml()` from `src/lib/html/sanitize-feed-html.ts` (server-only allowlist); it is the only place `dangerouslySetInnerHTML` may get its input.
 
 ## Data access
 

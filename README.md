@@ -2,7 +2,7 @@
 
 A private, self-hostable RSS/Atom dashboard built with Next.js, Supabase and Render.
 
-> Status: feed ingestion works (`npm run ingest`). Sign-in, feed management and the reading UI are not implemented yet.
+> Status: usable. Sign-in, a three-column reader, feed management and scheduled ingestion work.
 
 ## Stack
 
@@ -31,7 +31,13 @@ npm run dev                   # http://localhost:3000
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key                        |
 | `SUPABASE_SERVICE_ROLE_KEY`            | Secret key (only for `npm run ingest`) |
 
-The local seed creates a fictional user, `dev@example.com` / `rssdeck-local-dev`, with one sample feed.
+The local seed creates a fictional user, `dev@example.com` / `rssdeck-local-dev`, with one sample feed. Sign in at http://localhost:3000/login.
+
+## Accounts
+
+RSSDeck is private: there is no sign-up page. Sign-in uses Supabase Auth with email and password, and every page except `/login` requires a session.
+
+In production, create users in the Supabase dashboard (Authentication → Users → Add user) and turn off public sign-ups (Authentication → Sign In / Providers → "Allow new users to sign up").
 
 ## Common tasks
 
@@ -55,8 +61,19 @@ The schema lives exclusively in `supabase/migrations/`. Every change is a new mi
 - `feeds`: a user's subscriptions, with HTTP cache validators, fetch scheduling and failure backoff.
 - `entries`: items ingested from feeds, unique per `(feed_id, external_id)`; written only by the ingestion job.
 - `entry_states`: per-user read and starred timestamps.
+- `entry_list` (view, `security_invoker`): entries joined with the caller's own state; `entry_counts()`, `set_entry_state()` and `mark_entries_read()` run as the caller, so RLS applies.
 
 RLS limits every authenticated user to their own feeds, the entries of those feeds, and their own entry state. Column-level grants stop users from editing ingestion bookkeeping (ETag, schedule, errors). `anon` has no access.
+
+## Reading
+
+The app is a three-column reader: feeds and views (All, Unread, Starred) with counts on the left, the entry list in the middle, the open entry on the right. Narrower screens show one pane at a time. The view lives in the URL (`/?filter=unread&feed=…&entry=…`), so every state is linkable.
+
+Opening an entry marks it read; entries can be starred, marked unread, and a feed (or everything) marked as read. Feed HTML is sanitized on the server with an allowlist (`src/lib/html/sanitize-feed-html.ts`) before it is rendered: no scripts, styles, frames, forms or event handlers; links open in a new tab without a referrer.
+
+## Feeds
+
+At `/feeds` ("Manage feeds") a user adds a feed by its address (fetched once to check that it is a feed, with the same network guard as ingestion), sees each feed's last refresh or error, and removes feeds after confirming. New feeds get their entries on the next ingestion run.
 
 ## Feed ingestion
 
@@ -76,7 +93,8 @@ A broken feed records a short `last_error` (never its URL, which may contain tok
 src/
   app/              routes and layouts
   components/       reusable presentation components
-  features/         domain-oriented application functionality (ingestion/)
+  features/         domain-oriented functionality (auth/, entries/, feeds/, ingestion/)
+  lib/html/         sanitization of feed HTML for rendering
   lib/rss/          feed fetching, parsing and normalization (no persistence)
   lib/supabase/     browser, server and service-role clients
   styles/yev/       vendored yev-design foundations (do not edit)

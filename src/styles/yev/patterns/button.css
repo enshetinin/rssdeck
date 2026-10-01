@@ -1,0 +1,238 @@
+/* Yev Design — button pattern
+   Stability: stable candidate (patterns v0.2.0). Validated in the operational,
+   identity and reading dialects. The public classes .yev-button,
+   .yev-button-outline and .yev-button-text and the dials below are the API.
+   A recipe for anything that should look like a button: a native <button>, or an
+   <a href> where navigation genuinely needs button-like treatment. Not a
+   component: no variants beyond emphasis, no icon slots, no loading state, no
+   destructive or success flavour. Size, density and placement are the project's.
+
+   Emphasis is visual weight, never semantic intent. There is no "primary",
+   "secondary" or "danger" here, and Yev Signal is not a default fill:
+
+     .yev-button                solid    — filled with ink; the loudest
+     .yev-button-outline        outline  — an ink edge, no fill
+     .yev-button-text           text     — underlined ink, no edge, no fill,
+                                           regular weight
+
+   Solid is the base class, so a plain .yev-button is the strongest emphasis and
+   the other two are modifiers of it:
+
+     <button type="button" class="yev-button">Save</button>
+     <button type="button" class="yev-button yev-button-outline">Cancel</button>
+     <a class="yev-button yev-button-text" href="/changelog">Changelog</a>
+
+   Which emphasis a control gets is a composition decision: the hierarchy of the
+   surface it sits on, not what the action means.
+
+   <a> navigates, <button> performs an action. Choose the element by what
+   happens on activation, then the class by how loud it should be. A link styled
+   as a button is still a link: it goes somewhere, Space does not activate it,
+   and it opens in a new tab on request. A button that only navigates is a
+   defect. Use button treatment on <a> only where the destination is the
+   primary thing on the surface (a next step, a download), not to make ordinary
+   links look important.
+
+   disabled and aria-disabled are different tools; neither replaces the other.
+
+     disabled       Native. Removes the control from the tab order and from
+                    activation, and from form submission. Use it when the
+                    control is genuinely unavailable and losing focus does not
+                    hurt: a submit that has no valid input yet is the usual
+                    case, and even there a message beats silence.
+     aria-disabled  A hint to assistive technology only; the browser still
+                    focuses and activates the control. Use it when a control
+                    must stay discoverable and focusable: a pagination endpoint,
+                    the current step of a wizard, or a button that is disabled
+                    while it is working (disabling would throw focus away). It
+                    is not enough by itself: the project must also block the
+                    behavior — cancel the click (which covers Enter and Space on
+                    a <button>, and implicit form submission) and, on an <a>,
+                    cancel navigation. An <a> without an href is not focusable;
+                    give it role="link" and tabindex="0" if it must be.
+
+   Both look the same here (muted ink, dashed edge, no fill), so users never see
+   the mechanism. The stylesheet does not decide which one a control uses.
+
+   Pressed feedback is automatic, on every device. Solid and outline take a
+   stronger tint over the whole box while held. Text never paints a box: it is
+   underlined at rest, the underline thickens on hover and thickens again while
+   pressed, and that is all. Adopting this pattern therefore introduces pressed
+   feedback even where the product had none before; that is intended, not a
+   side effect to override.
+
+   Everything else comes from Foundations: the focus ring (interactions.css),
+   the hover feedback limited to devices that can hover, and the reduced-motion
+   safety net (reset.css). Nothing on this control animates, so there is nothing
+   to reduce.
+
+   Typography is the dialect's. The label takes its family and letter-spacing
+   from the surrounding text (via the foundation reset), its size and weight from
+   the two dials below, and its line height from --yev-button-leading, which is
+   `normal` unless a dialect sets it. Nothing here is a house leading that a
+   project has to override to keep its own.
+
+   Dials. Set on the control or any ancestor; none is required.
+
+     --yev-button-min-block   minimum height; defaults to --yev-target (44px).
+                              A dense dialect may lower it, but should stay at
+                              or above 24px (WCAG 2.5.8) and keep the spacing
+                              the criterion allows for. It is a minimum: label
+                              line height plus block padding can exceed it, so a
+                              dialect below ~1.75rem also lowers pad-block.
+     --yev-button-pad-inline  inline padding
+     --yev-button-pad-block   block padding (matters when the label wraps);
+                              defaults to --yev-space-1
+     --yev-button-gap         space between label and an inline icon
+     --yev-button-radius      defaults to --yev-radius-control
+     --yev-button-border-width
+     --yev-button-font-size   defaults to --yev-text-ui
+     --yev-button-weight      defaults to 500 for solid and outline and to
+                              400 for text. Set on an ancestor it applies to
+                              every emphasis; to change only one, set it on
+                              that emphasis's class.
+     --yev-button-leading     label line height; defaults to normal
+     --yev-button-ink         fill of solid, edge and text of the others;
+                              defaults to --yev-fg
+     --yev-button-on-ink      label colour on the solid fill; defaults to
+                              --yev-bg. Whatever pair a dialect chooses must
+                              hold 4.5:1 for the label and 3:1 for the edge. Yev
+                              Signal does not do either on paper.
+     --yev-button-edge        resting edge of the outline emphasis; defaults to
+                              --yev-edge (3:1 on both themes). It turns to
+                              --yev-button-ink on hover and while pressed. */
+
+.yev-button {
+  --_ink: var(--yev-button-ink, var(--yev-fg));
+  --_on-ink: var(--yev-button-on-ink, var(--yev-bg));
+  /* State layers. On a solid fill the foundation wash (foreground-tinted) would
+     be invisible, so solid tints toward its own label colour instead. */
+  --_wash: color-mix(in srgb, var(--_on-ink) 20%, transparent);
+  --_wash-strong: color-mix(in srgb, var(--_on-ink) 34%, transparent);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--yev-button-gap, var(--yev-space-2));
+  min-block-size: var(--yev-button-min-block, var(--yev-target));
+  padding-block: var(--yev-button-pad-block, var(--yev-space-1));
+  padding-inline: var(--yev-button-pad-inline, var(--yev-space-4));
+  border: var(--yev-button-border-width, 1px) solid var(--_ink);
+  border-radius: var(--yev-button-radius, var(--yev-radius-control));
+  background-color: var(--_ink);
+  color: var(--_on-ink);
+  font-size: var(--yev-button-font-size, var(--yev-text-ui));
+  font-weight: var(--yev-button-weight, 500);
+  line-height: var(--yev-button-leading, normal);
+  text-align: center;
+  text-decoration: none; /* an <a> in button clothes */
+  cursor: pointer;
+}
+
+.yev-button-outline {
+  --_wash: var(--yev-wash);
+  --_wash-strong: var(--yev-wash-strong);
+  border-color: var(--yev-button-edge, var(--yev-edge));
+  background-color: transparent;
+  color: var(--_ink);
+}
+
+/* Text emphasis keeps the edge's width but not its colour, so switching
+   emphasis never moves the layout, and keeps the foundation's underline so it is
+   never mistaken for plain text. Its weight is the text's own, and it has no
+   state layer: feedback is the underline alone (see hover and pressed below). */
+.yev-button-text {
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--_ink);
+  font-weight: var(--yev-button-weight, 400);
+  text-decoration-line: underline;
+  text-decoration-thickness: max(1px, 0.075em);
+  text-underline-offset: 0.2em;
+}
+
+/* Hover and pressed — hover only where the device can hover. The text rules
+   come after the shared ones with equal specificity, so they cancel the tint:
+   text feedback is thickness, never a box. */
+@media (hover: hover) {
+  .yev-button:hover:not(:disabled, [aria-disabled="true"]) {
+    background-image: linear-gradient(var(--_wash), var(--_wash));
+  }
+
+  .yev-button-outline:hover:not(:disabled, [aria-disabled="true"]) {
+    border-color: var(--_ink);
+  }
+
+  .yev-button-text:hover:not(:disabled, [aria-disabled="true"]) {
+    background-image: none;
+    text-decoration-thickness: max(2px, 0.14em);
+  }
+}
+
+.yev-button:active:not(:disabled, [aria-disabled="true"]) {
+  background-image: linear-gradient(var(--_wash-strong), var(--_wash-strong));
+}
+
+.yev-button-outline:active:not(:disabled, [aria-disabled="true"]) {
+  border-color: var(--_ink);
+}
+
+.yev-button-text:active:not(:disabled, [aria-disabled="true"]) {
+  background-image: none;
+  text-decoration-thickness: max(3px, 0.2em);
+}
+
+/* Unavailable — one look for disabled and aria-disabled. Ink turns muted, the
+   fill goes, the edge turns dashed: the change is in shape and value, not in
+   opacity (which would stack on the label's own contrast). The cursor is
+   restated because the rule above sets cursor: pointer later in the cascade
+   than the foundation's not-allowed. */
+.yev-button:disabled,
+.yev-button[aria-disabled="true"] {
+  border-style: dashed;
+  border-color: var(--yev-edge);
+  background-color: transparent;
+  background-image: none;
+  color: var(--yev-muted);
+  cursor: not-allowed;
+}
+
+.yev-button-text:disabled,
+.yev-button-text[aria-disabled="true"] {
+  border-color: transparent;
+  text-decoration-style: dashed;
+  text-decoration-thickness: max(1px, 0.075em);
+}
+
+/* Forced colors: the browser owns the palette and repaints every button as
+   ButtonText on ButtonFace, which makes solid and outline identical. Solid keeps
+   its fill by opting out of the repaint and drawing itself entirely in system
+   colours: the user's own ButtonText as fill and ButtonFace as label, the
+   inverse of every other button on the page. The focus ring is restated in a
+   system colour because the opt-out would otherwise let the author colour
+   through. Outline keeps the system edge on the system face; text keeps its
+   underline. Unavailable controls of every emphasis take GrayText and lose the
+   fill, so a disabled solid reads as unavailable, not as a quieter outline. */
+@media (forced-colors: active) {
+  .yev-button:not(.yev-button-outline, .yev-button-text) {
+    --_on-ink: ButtonFace;
+    forced-color-adjust: none;
+    border-color: ButtonText;
+    background-color: ButtonText;
+    color: ButtonFace;
+    outline-color: CanvasText;
+  }
+
+  .yev-button:disabled,
+  .yev-button[aria-disabled="true"] {
+    border-color: GrayText;
+    background-color: transparent;
+    background-image: none;
+    color: GrayText;
+  }
+
+  .yev-button-text:disabled,
+  .yev-button-text[aria-disabled="true"] {
+    border-color: transparent;
+  }
+}
