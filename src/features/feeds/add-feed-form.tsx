@@ -22,8 +22,8 @@ export function AddFeedForm() {
         key={state.status === "error" ? `error:${state.url}:${state.error}` : state.status}
         id="feed-url"
         name="url"
-        label="Feed address"
-        hint="The URL of an RSS or Atom feed, such as https://example.com/feed.xml."
+        label="Feed or website address"
+        hint="An RSS or Atom feed, or a website that links to one, such as blog.example.com."
         inputMode="url"
         autoComplete="url"
         spellCheck={false}
@@ -40,12 +40,12 @@ export function AddFeedForm() {
             if (pending) event.preventDefault();
           }}
         >
-          {pending ? "Checking feed…" : "Add feed"}
+          {pending ? "Looking for the feed…" : "Add feed"}
         </button>
       </div>
       <p role="status" className="form-status">
         {state.status === "added"
-          ? `Added ${state.title}. Its entries arrive with the next refresh.`
+          ? `${state.discovered ? "Found and added" : "Added"} ${state.title}. Its entries arrive with the next refresh.`
           : ""}
       </p>
     </form>

@@ -3,24 +3,26 @@
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/features/auth/session";
+import { OpmlParseError, parseOpml } from "@/lib/opml/parse-opml";
 import { FeedFetchError, FeedParseError } from "@/lib/rss/errors";
-import { fetchFeed } from "@/lib/rss/fetch";
-import { parseFeed } from "@/lib/rss/parse";
 import { createClient } from "@/lib/supabase/server";
 
 import { normalizeFeedUrl } from "./feed-url";
+import { prepareImport } from "./prepare-import";
+import { FeedNotFoundError, resolveFeed } from "./resolve-feed";
 
 export type AddFeedState =
   | { status: "idle" }
   | { status: "error"; error: string; url: string }
-  | { status: "added"; title: string };
+  | { status: "added"; title: string; discovered: boolean };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Subscribes the signed-in user to a feed. The feed is fetched once first, so
- * a typo or a web page that is not a feed is reported now rather than as a
- * failing subscription later. Entries arrive with the next ingestion run.
+ * Subscribes the signed-in user to a feed. The address may be the feed itself
+ * or a web page that links to one. It is fetched once first, so a typo or a
+ * page without a feed is reported now rather than as a failing subscription
+ * later. Entries arrive with the next ingestion run.
  */
 export async function addFeed(_previous: AddFeedState, formData: FormData): Promise<AddFeedState> {
   await requireUser();
@@ -29,14 +31,13 @@ export async function addFeed(_previous: AddFeedState, formData: FormData): Prom
   const normalized = normalizeFeedUrl(input);
   if (!normalized.ok) return { status: "error", error: normalized.error, url: input };
 
-  let feedUrl: string;
-  let title: string | null;
+  let resolved: Awaited<ReturnType<typeof resolveFeed>>;
   try {
-    const result = await fetchFeed(normalized.url, { etag: null, lastModified: null });
-    if (result.status !== "ok") throw new FeedFetchError("Unexpected 304 response.");
-    feedUrl = result.finalUrl;
-    title = parseFeed(result.body, result.finalUrl).title;
+    resolved = await resolveFeed(normalized.url);
   } catch (error) {
+    if (error instanceof FeedNotFoundError) {
+      return { status: "error", error: error.message, url: input };
+    }
     if (error instanceof FeedParseError) {
       return {
         status: "error",
@@ -47,7 +48,7 @@ export async function addFeed(_previous: AddFeedState, formData: FormData): Prom
     if (error instanceof FeedFetchError) {
       return {
         status: "error",
-        error: `The feed could not be loaded: ${error.message}`,
+        error: `The address could not be loaded: ${error.message}`,
         url: input,
       };
     }
@@ -55,7 +56,9 @@ export async function addFeed(_previous: AddFeedState, formData: FormData): Prom
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("feeds").insert({ feed_url: feedUrl, title });
+  const { error } = await supabase
+    .from("feeds")
+    .insert({ feed_url: resolved.feedUrl, title: resolved.title });
 
   if (error) {
     if (error.code === "23505") {
@@ -64,9 +67,77 @@ export async function addFeed(_previous: AddFeedState, formData: FormData): Prom
     throw new Error(`Adding feed failed: ${error.message}`);
   }
 
-  revalidatePath("/feeds");
-  revalidatePath("/");
-  return { status: "added", title: title ?? new URL(feedUrl).hostname };
+  revalidatePath("/", "layout");
+  return {
+    status: "added",
+    title: resolved.title ?? new URL(resolved.feedUrl).hostname,
+    discovered: resolved.discoveredFrom !== null,
+  };
+}
+
+export type ImportFeedsState =
+  | { status: "idle" }
+  | { status: "error"; error: string }
+  | {
+      status: "imported";
+      added: number;
+      alreadyFollowed: number;
+      skipped: number;
+      overLimit: number;
+    };
+
+const MAX_OPML_BYTES = 512 * 1024;
+
+/**
+ * Subscribes to every feed in an OPML file. Feeds are not fetched here (an
+ * import can hold hundreds); ingestion checks them and reports broken ones
+ * under Manage feeds.
+ */
+export async function importFeeds(
+  _previous: ImportFeedsState,
+  formData: FormData,
+): Promise<ImportFeedsState> {
+  await requireUser();
+
+  const file = formData.get("opml");
+  if (!(file instanceof File) || file.size === 0) {
+    return { status: "error", error: "Choose an OPML file to import." };
+  }
+  if (file.size > MAX_OPML_BYTES) {
+    return { status: "error", error: "This file is larger than 512 KB." };
+  }
+
+  let prepared: ReturnType<typeof prepareImport>;
+  try {
+    prepared = prepareImport(parseOpml(await file.text()));
+  } catch (error) {
+    if (error instanceof OpmlParseError) return { status: "error", error: error.message };
+    throw error;
+  }
+  if (prepared.feeds.length === 0) {
+    return { status: "error", error: "This file does not contain any feed addresses." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("feeds")
+    .upsert(
+      prepared.feeds.map((feed) => ({ feed_url: feed.url, title: feed.title })),
+      // Feeds the user already follows are left as they are.
+      { onConflict: "user_id,feed_url", ignoreDuplicates: true },
+    )
+    .select("id");
+
+  if (error) throw new Error(`Importing feeds failed: ${error.message}`);
+
+  revalidatePath("/", "layout");
+  return {
+    status: "imported",
+    added: data.length,
+    alreadyFollowed: prepared.feeds.length - data.length,
+    skipped: prepared.invalid + prepared.duplicates,
+    overLimit: prepared.overLimit,
+  };
 }
 
 export type RemoveFeedState =
@@ -89,7 +160,6 @@ export async function removeFeed(
   // RLS hides other users' feeds, so "not yours" and "already gone" look the same.
   if (data.length === 0) return { status: "error", error: "This feed no longer exists." };
 
-  revalidatePath("/feeds");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return { status: "removed" };
 }

@@ -224,6 +224,7 @@ body {
 
 .sidebar-account {
   display: grid;
+  justify-items: start;
   gap: var(--yev-space-1);
   font-size: var(--yev-text-ui);
 }
@@ -508,6 +509,12 @@ body {
   }
 }
 
+.manage-context {
+  display: grid;
+  gap: var(--yev-space-7);
+  align-content: start;
+}
+
 .feeds-section {
   display: grid;
   gap: var(--yev-space-5);
@@ -593,6 +600,29 @@ body {
   border: 1px solid var(--yev-edge);
   border-radius: var(--yev-radius-control);
   background: transparent;
+}
+
+.field-file {
+  inline-size: 100%;
+  min-block-size: var(--yev-target);
+  font-size: var(--yev-text-ui);
+}
+
+.field-file::file-selector-button {
+  min-block-size: var(--yev-target);
+  margin-inline-end: var(--yev-space-3);
+  padding-inline: var(--yev-space-4);
+  border: 1px solid var(--yev-edge);
+  border-radius: var(--yev-radius-control);
+  background: transparent;
+  color: var(--yev-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.field-file[aria-invalid="true"] {
+  padding-inline-start: var(--yev-space-3);
+  border-inline-start: 4px solid var(--yev-error);
 }
 
 .field-control[aria-invalid="true"] {

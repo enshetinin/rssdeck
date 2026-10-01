@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+  <head><title>Exported from another reader</title></head>
+  <body>
+    <outline text="Tech" title="Tech">
+      <outline type="rss" text="Rust &amp; Friends" title="Rust &amp; Friends" xmlUrl="https://rust.example.test/feed.xml" htmlUrl="https://rust.example.test/"/>
+      <outline type="rss" text="Only text" xmlurl="https://text.example.test/atom"/>
+      <outline text="Nested folder">
+        <outline type="rss" title="Deep" xmlUrl="https://deep.example.test/rss"/>
+      </outline>
+    </outline>
+    <outline type="rss" text="No URL"/>
+    <outline type="rss" text="Bad scheme" xmlUrl="ftp://bad.example.test/feed"/>
+    <outline type="rss" text="Duplicate" xmlUrl="https://rust.example.test/feed.xml#again"/>
+    <outline type="rss" text="Top level" xmlUrl="top.example.test/feed"/>
+  </body>
+</opml>

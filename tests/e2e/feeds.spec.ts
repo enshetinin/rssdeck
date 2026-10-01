@@ -20,7 +20,7 @@ test("lists feeds with their status", async ({ page }) => {
 
 test("rejects an invalid feed address with an accessible error", async ({ page }) => {
   await signIn(page, "/feeds");
-  const field = page.getByLabel("Feed address");
+  const field = page.getByLabel("Feed or website address");
 
   await field.fill("ftp://example.test/feed");
   await page.getByRole("button", { name: "Add feed" }).click();
@@ -35,7 +35,7 @@ test("rejects an invalid feed address with an accessible error", async ({ page }
 
 test("refuses feeds on private networks", async ({ page }) => {
   await signIn(page, "/feeds");
-  await page.getByLabel("Feed address").fill("http://127.0.0.1:54321/feed");
+  await page.getByLabel("Feed or website address").fill("http://127.0.0.1:54321/feed");
   await page.getByRole("button", { name: "Add feed" }).click();
   await expect(page.getByText(/non-public network address/)).toBeVisible();
 });

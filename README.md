@@ -75,7 +75,9 @@ Keyboard shortcuts: `j` / `k` next and previous entry, `s` star, `m` read/unread
 
 ## Feeds
 
-At `/feeds` ("Manage feeds") a user adds a feed by its address (fetched once to check that it is a feed, with the same network guard as ingestion), sees each feed's last refresh or error, and removes feeds after confirming. New feeds get their entries on the next ingestion run.
+At `/feeds` ("Manage feeds") a user adds a feed by its address or by a website address (the page's `<link rel="alternate">` feeds are discovered; everything is fetched through the same network guard as ingestion), sees each feed's last refresh or error, and removes feeds after confirming. New feeds get their entries on the next ingestion run.
+
+Subscriptions can be imported from and exported to OPML, the format other readers use. Imports are capped at 500 feeds and 512 KB, folders are flattened, and imported feeds are not fetched on the spot: ingestion checks them and reports broken ones.
 
 ## Feed ingestion
 

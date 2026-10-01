@@ -63,3 +63,12 @@ export async function createTestEntries(feedId: string, count: number) {
   const { error } = await adminClient().from("entries").insert(rows);
   if (error) throw new Error(`Creating test entries failed: ${error.message}`);
 }
+
+/** Removes the dev user's feeds whose URL contains `marker` (for feeds created through the UI). */
+export async function deleteFeedsMatching(marker: string) {
+  await adminClient()
+    .from("feeds")
+    .delete()
+    .eq("user_id", DEV_USER.id)
+    .like("feed_url", `%${marker}%`);
+}

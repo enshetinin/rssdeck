@@ -77,7 +77,7 @@ test.describe("keyboard shortcuts", () => {
 
   test("typing in a field does not trigger shortcuts", async ({ page }) => {
     await signIn(page, "/feeds");
-    const field = page.getByLabel("Feed address");
+    const field = page.getByLabel("Feed or website address");
     await field.click();
     await page.keyboard.type("jks?");
     await expect(field).toHaveValue("jks?");
