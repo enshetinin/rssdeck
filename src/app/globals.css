@@ -31,6 +31,55 @@ body {
   --yev-button-pad-inline: 0;
 }
 
+/* yev-icons draw on a 24px grid; sized in em they follow the label's type size
+   and zoom. */
+.icon {
+  flex: none;
+  inline-size: 1.25em;
+  block-size: 1.25em;
+}
+
+.icon-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--yev-space-2);
+}
+
+/* Links that leave RSSDeck reveal an external-link mark on hover or keyboard
+   focus. The space is always reserved so the line never reflows. Drawn as a
+   mask so it also reaches links inside sanitized feed HTML. */
+.external-link::after,
+.reader-content a[href^="http"]::after {
+  content: "";
+  display: inline-block;
+  inline-size: 0.9em;
+  block-size: 0.9em;
+  margin-inline-start: 0.2em;
+  vertical-align: -0.05em;
+  background-color: currentColor;
+  mask: url("yev-icons/svg/external-link.svg") center / contain no-repeat;
+  opacity: 0;
+}
+
+.external-link:focus-visible::after,
+.reader-content a[href^="http"]:focus-visible::after {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .external-link:hover::after,
+  .reader-content a[href^="http"]:hover::after {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .external-link::after,
+  .reader-content a[href^="http"]::after {
+    transition: opacity var(--yev-motion-fast) ease-out;
+  }
+}
+
 .shell-wordmark {
   display: inline-flex;
   align-items: center;

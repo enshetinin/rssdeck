@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { CloseIcon, MenuIcon } from "yev-icons";
 
 import { signOut } from "@/features/auth/actions";
 import { KeyboardShortcuts } from "@/features/shortcuts/keyboard-shortcuts";
@@ -74,6 +75,7 @@ export function AppSidebar({
           aria-controls="app-sidebar-content"
           onClick={() => setOpen((value) => !value)}
         >
+          {open ? <CloseIcon className="icon" /> : <MenuIcon className="icon" />}
           Menu
         </button>
       </div>

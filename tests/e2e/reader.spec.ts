@@ -82,7 +82,7 @@ test.describe("reader", () => {
     await expect(page.getByRole("heading", { name: "Entry 3" })).toBeFocused();
     await expect(page.getByRole("heading", { level: 1 })).toBeHidden();
 
-    await page.getByRole("link", { name: `← ${feed.title}` }).click();
+    await page.locator(".reader-back").getByRole("link").click();
     await expect(page.getByRole("heading", { level: 1, name: feed.title ?? "" })).toBeVisible();
   });
 });

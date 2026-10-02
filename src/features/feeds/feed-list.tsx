@@ -18,7 +18,15 @@ export function FeedList({ feeds, now }: { feeds: FeedListItem[]; now: Date }) {
         return (
           <li key={feed.id} className="feed-row">
             <div className="feed-row-main">
-              <p className="feed-name">{feed.siteUrl ? <a href={feed.siteUrl}>{name}</a> : name}</p>
+              <p className="feed-name">
+                {feed.siteUrl ? (
+                  <a href={feed.siteUrl} className="external-link">
+                    {name}
+                  </a>
+                ) : (
+                  name
+                )}
+              </p>
               <p className="feed-url">{feed.feedUrl}</p>
               {status.kind === "failing" ? (
                 <p className="feed-status feed-status-failing">

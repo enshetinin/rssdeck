@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DownloadIcon } from "yev-icons";
 
 import { AddFeedForm } from "@/features/feeds/add-feed-form";
 import { FeedList } from "@/features/feeds/feed-list";
@@ -22,7 +23,8 @@ export default async function FeedsPage() {
               Export
             </h2>
             <p>
-              <a href="/feeds/export" download>
+              <a href="/feeds/export" download className="icon-link">
+                <DownloadIcon className="icon" />
                 Download OPML
               </a>
               <span className="field-hint"> · all {feeds.length} feeds, for any other reader</span>

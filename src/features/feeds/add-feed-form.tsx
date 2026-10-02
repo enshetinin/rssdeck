@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { PlusIcon } from "yev-icons";
 
 import { TextField } from "@/components/text-field";
 
@@ -40,7 +41,14 @@ export function AddFeedForm() {
             if (pending) event.preventDefault();
           }}
         >
-          {pending ? "Looking for the feed…" : "Add feed"}
+          {pending ? (
+            "Looking for the feed…"
+          ) : (
+            <>
+              <PlusIcon className="icon" />
+              Add feed
+            </>
+          )}
         </button>
       </div>
       <p role="status" className="form-status">

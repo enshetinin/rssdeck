@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeftIcon } from "yev-icons";
 
 import { sanitizeFeedHtml } from "@/lib/html/sanitize-feed-html";
 
@@ -31,7 +32,10 @@ export function EntryReader({
         headingId={headingId}
       />
       <p className="reader-back">
-        <Link href={backHref}>← {backLabel}</Link>
+        <Link href={backHref} className="icon-link">
+          <ArrowLeftIcon className="icon" />
+          {backLabel}
+        </Link>
       </p>
 
       <header className="reader-header">
@@ -64,12 +68,11 @@ export function EntryReader({
               href={entry.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="reader-original"
+              className="reader-original external-link"
               aria-keyshortcuts="o"
               data-shortcut="open-original"
             >
               Open original<span className="yev-sr-only"> (opens in a new tab)</span>
-              <span aria-hidden="true"> ↗</span>
             </a>
           ) : null}
         </div>

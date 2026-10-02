@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useId, useRef } from "react";
+import { EditIcon } from "yev-icons";
 
 import { TextField } from "@/components/text-field";
 
@@ -50,6 +51,7 @@ export function EditFeedButton({
           if (!dialogRef.current?.open) dialogRef.current?.showModal();
         }}
       >
+        <EditIcon className="icon" />
         Edit<span className="yev-sr-only"> {feedName}</span>
       </button>
 

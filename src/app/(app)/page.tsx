@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowDownIcon, ArrowUpIcon } from "yev-icons";
 
 import { EntryList } from "@/features/entries/entry-list";
 import { EntryReader } from "@/features/entries/entry-reader";
@@ -57,10 +58,17 @@ export default async function ReaderPage({
         {view.before || page.older ? (
           <nav aria-label="Pages" className="pane-pagination yev-cluster">
             {view.before ? (
-              <Link href={viewHref({ ...view, before: null, entryId: null })}>Newest entries</Link>
+              <Link href={viewHref({ ...view, before: null, entryId: null })} className="icon-link">
+                <ArrowUpIcon className="icon" />
+                Newest entries
+              </Link>
             ) : null}
             {page.older ? (
-              <Link href={viewHref({ ...view, before: page.older, entryId: null })}>
+              <Link
+                href={viewHref({ ...view, before: page.older, entryId: null })}
+                className="icon-link"
+              >
+                <ArrowDownIcon className="icon" />
                 Older entries
               </Link>
             ) : null}
