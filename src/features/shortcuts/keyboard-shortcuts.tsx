@@ -58,7 +58,10 @@ function runShortcut(action: Exclude<ShortcutAction, "show-help">) {
     target.scrollIntoView({ block: "nearest" });
     return;
   }
-  document.querySelector<HTMLElement>(`[data-shortcut="${action}"]`)?.click();
+  const control = document.querySelector<HTMLElement>(`[data-shortcut="${action}"]`);
+  // A field is entered, not pressed.
+  if (control instanceof HTMLInputElement) control.focus();
+  else control?.click();
 }
 
 /**

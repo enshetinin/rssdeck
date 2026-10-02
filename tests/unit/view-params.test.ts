@@ -10,6 +10,7 @@ describe("parseViewParams", () => {
     expect(parseViewParams({})).toEqual({
       filter: "all",
       feedId: null,
+      query: null,
       entryId: null,
       before: null,
     });
@@ -20,12 +21,14 @@ describe("parseViewParams", () => {
       parseViewParams({
         filter: "unread",
         feed: feedId,
+        q: "  rust   async ",
         entry: entryId,
         before: `2026-10-01T10:00:00.123+00:00_${entryId}`,
       }),
     ).toEqual({
       filter: "unread",
       feedId,
+      query: "rust async",
       entryId,
       before: { sortAt: "2026-10-01T10:00:00.123+00:00", id: entryId },
     });
@@ -36,10 +39,11 @@ describe("parseViewParams", () => {
       parseViewParams({
         filter: "everything",
         feed: "1 or 1=1",
+        q: "   ",
         entry: [entryId, "x"],
         before: `2026-10-01),id.gt.(0_${entryId}`,
       }),
-    ).toEqual({ filter: "all", feedId: null, entryId, before: null });
+    ).toEqual({ filter: "all", feedId: null, query: null, entryId, before: null });
   });
 });
 
@@ -62,11 +66,12 @@ describe("viewHref", () => {
       viewHref({
         filter: "starred",
         feedId,
+        query: "café & co",
         entryId,
         before: { sortAt: "2026-10-01T10:00:00+00:00", id: entryId },
       }),
     ).toBe(
-      `/?filter=starred&feed=${feedId}&before=2026-10-01T10%3A00%3A00%2B00%3A00_${entryId}&entry=${entryId}`,
+      `/?filter=starred&feed=${feedId}&q=caf%C3%A9+%26+co&before=2026-10-01T10%3A00%3A00%2B00%3A00_${entryId}&entry=${entryId}`,
     );
   });
 });

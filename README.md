@@ -71,9 +71,11 @@ The app is a three-column reader: feeds and views (All, Unread, Starred) with co
 
 Opening an entry marks it read; entries can be starred, marked unread, and a feed (or everything) marked as read after confirming. Feed HTML is sanitized on the server with an allowlist (`src/lib/html/sanitize-feed-html.ts`) before it is rendered: no scripts, styles, frames, forms or event handlers; links open in a new tab without a referrer.
 
+Search sits above the entry list and narrows the current view (`/?feed=…&q=…`). It is PostgreSQL full-text search over titles, authors and entry text (`entries.search`, a generated `tsvector` with a GIN index): every word must match, as a prefix, ignoring case and accents. Only entries still stored can be found, so read entries pruned after 30 days are not searchable unless starred.
+
 The sidebar has a System / Light / Dark theme switch (kept in a cookie, so the page renders in the right theme without a flash), and the tab title shows the unread count.
 
-Keyboard shortcuts: `j` / `k` next and previous entry, `s` star, `m` read/unread, `o` open the original, `?` help. They can be turned off in the help dialog (also reachable from "Keyboard shortcuts" in the sidebar), and are ignored while typing in a field.
+Keyboard shortcuts: `j` / `k` next and previous entry, `s` star, `m` read/unread, `o` open the original, `/` search, `?` help. They can be turned off in the help dialog (also reachable from "Keyboard shortcuts" in the sidebar), and are ignored while typing in a field.
 
 ## Feeds
 

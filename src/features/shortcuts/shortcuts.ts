@@ -3,7 +3,13 @@
 // does exactly what clicking would do.
 
 export type ShortcutAction =
-  "next-entry" | "previous-entry" | "toggle-star" | "toggle-read" | "open-original" | "show-help";
+  | "next-entry"
+  | "previous-entry"
+  | "toggle-star"
+  | "toggle-read"
+  | "open-original"
+  | "focus-search"
+  | "show-help";
 
 export const SHORTCUTS: { keys: string; action: ShortcutAction; description: string }[] = [
   { keys: "j", action: "next-entry", description: "Next entry" },
@@ -11,6 +17,7 @@ export const SHORTCUTS: { keys: string; action: ShortcutAction; description: str
   { keys: "s", action: "toggle-star", description: "Star or unstar the open entry" },
   { keys: "m", action: "toggle-read", description: "Mark the open entry read or unread" },
   { keys: "o", action: "open-original", description: "Open the original in a new tab" },
+  { keys: "/", action: "focus-search", description: "Search entries" },
   { keys: "?", action: "show-help", description: "Show keyboard shortcuts" },
 ];
 

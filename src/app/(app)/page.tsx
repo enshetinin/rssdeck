@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowDownIcon, ArrowUpIcon } from "yev-icons";
+import { ArrowDownIcon, ArrowUpIcon, CloseIcon } from "yev-icons";
 
 import { EntryList } from "@/features/entries/entry-list";
 import { EntryReader } from "@/features/entries/entry-reader";
+import { EntrySearch } from "@/features/entries/entry-search";
 import { MarkAllReadButton } from "@/features/entries/mark-all-read-button";
 import { getEntry, getSidebarData, listEntries } from "@/features/entries/queries";
 import { parseViewParams, viewHref, type ViewParams } from "@/features/entries/view-params";
@@ -21,6 +22,7 @@ export default async function ReaderPage({
     listEntries({
       filter: view.filter,
       feedId: view.feedId,
+      query: view.query,
       before: view.before,
       keepEntryId: view.entryId,
     }),
@@ -34,11 +36,27 @@ export default async function ReaderPage({
     <div className="reader" data-has-entry={entry ? "" : undefined}>
       <section className="entry-pane" aria-labelledby="entry-pane-heading">
         <header className="pane-header">
+          <EntrySearch view={view} />
           <h1 id="entry-pane-heading" className="pane-title">
             {scope.title}
           </h1>
-          <p className="pane-meta">{scope.meta}</p>
-          {scope.unread > 0 ? (
+          {view.query ? (
+            <p className="pane-meta">
+              Matching “{view.query}” ·{" "}
+              <Link
+                href={viewHref({ ...view, query: null, before: null, entryId: null })}
+                className="icon-link"
+              >
+                <CloseIcon className="icon" />
+                Clear search
+              </Link>
+            </p>
+          ) : (
+            <p className="pane-meta">{scope.meta}</p>
+          )}
+          {/* Marking all as read acts on the whole scope, not the results; hidden
+              while searching so it cannot be mistaken for "mark these". */}
+          {scope.unread > 0 && !view.query ? (
             <MarkAllReadButton
               // A fresh dialog per scope, so a pending state never leaks across views.
               key={view.feedId ?? "all"}
@@ -131,6 +149,9 @@ function EmptyList({ view, hasFeeds }: { view: ViewParams; hasFeeds: boolean }) 
         </p>
       </div>
     );
+  }
+  if (view.query) {
+    return <p className="pane-empty">No entries match “{view.query}”.</p>;
   }
   const message =
     view.filter === "starred"

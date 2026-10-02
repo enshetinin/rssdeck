@@ -1,4 +1,6 @@
-// The reader's state lives in the URL (/?filter=unread&feed=…&entry=…), so
+import { normalizeSearchQuery } from "./search-query";
+
+// The reader's state lives in the URL (/?filter=unread&feed=…&q=…&entry=…), so
 // every view is linkable, works without client JavaScript and survives a
 // reload. Values are validated here before they reach a database query.
 
@@ -9,6 +11,8 @@ export type Cursor = { sortAt: string; id: string };
 export type ViewParams = {
   filter: EntryFilter;
   feedId: string | null;
+  /** Search text; narrows the filter and feed above rather than replacing them. */
+  query: string | null;
   entryId: string | null;
   before: Cursor | null;
 };
@@ -34,6 +38,7 @@ export function parseViewParams(searchParams: SearchParams): ViewParams {
   return {
     filter: filter === "unread" || filter === "starred" ? filter : "all",
     feedId: isUuid(feed) ? feed : null,
+    query: normalizeSearchQuery(single(searchParams.q)),
     entryId: isUuid(entry) ? entry : null,
     before: parseCursor(single(searchParams.before)),
   };
@@ -57,6 +62,7 @@ export function viewHref(params: Partial<ViewParams>): string {
   const search = new URLSearchParams();
   if (params.filter && params.filter !== "all") search.set("filter", params.filter);
   if (params.feedId) search.set("feed", params.feedId);
+  if (params.query) search.set("q", params.query);
   if (params.before) search.set("before", formatCursor(params.before));
   if (params.entryId) search.set("entry", params.entryId);
   const query = search.toString();

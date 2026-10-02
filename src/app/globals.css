@@ -370,6 +370,18 @@ body {
   padding: var(--yev-space-5) var(--pane-pad) var(--yev-space-3);
 }
 
+.entry-search {
+  display: flex;
+  flex-basis: 100%;
+  gap: var(--yev-space-2);
+  margin-block-end: var(--yev-space-4);
+}
+
+.entry-search .field-control {
+  flex: 1;
+  min-inline-size: 0;
+}
+
 .pane-title {
   flex-basis: 100%;
   font-size: var(--yev-h2-size);

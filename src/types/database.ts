@@ -13,6 +13,7 @@ export type Database = {
           id: string;
           last_seen_at: string;
           published_at: string | null;
+          search: unknown;
           sort_at: string | null;
           summary: string | null;
           title: string | null;
@@ -28,6 +29,7 @@ export type Database = {
           id?: string;
           last_seen_at?: string;
           published_at?: string | null;
+          search?: never;
           sort_at?: never;
           summary?: string | null;
           title?: string | null;
@@ -43,6 +45,7 @@ export type Database = {
           id?: string;
           last_seen_at?: string;
           published_at?: string | null;
+          search?: never;
           sort_at?: never;
           summary?: string | null;
           title?: string | null;
@@ -172,6 +175,7 @@ export type Database = {
           is_read: boolean | null;
           is_starred: boolean | null;
           published_at: string | null;
+          search: unknown;
           sort_at: string | null;
           starred_at: string | null;
           summary: string | null;

@@ -5,6 +5,7 @@ import { cache } from "react";
 import { htmlToPlainText, truncate } from "@/lib/rss/text";
 import { createClient } from "@/lib/supabase/server";
 
+import { toPrefixTsQuery } from "./search-query";
 import type { Cursor, EntryFilter } from "./view-params";
 
 export const PAGE_SIZE = 50;
@@ -35,9 +36,14 @@ export type EntryPage = {
 export async function listEntries(options: {
   filter: EntryFilter;
   feedId: string | null;
+  query: string | null;
   before: Cursor | null;
   keepEntryId: string | null;
 }): Promise<EntryPage> {
+  const tsQuery = options.query ? toPrefixTsQuery(options.query) : null;
+  // Text with no searchable words (only punctuation, say) matches nothing.
+  if (options.query && !tsQuery) return { entries: [], older: null };
+
   const supabase = await createClient();
   let query = supabase
     .from("entry_list")
@@ -49,6 +55,7 @@ export async function listEntries(options: {
     .limit(PAGE_SIZE + 1);
 
   if (options.feedId) query = query.eq("feed_id", options.feedId);
+  if (tsQuery) query = query.textSearch("search", tsQuery, { config: "entry_search" });
   if (options.filter === "starred") query = query.eq("is_starred", true);
   if (options.filter === "unread") {
     query = options.keepEntryId

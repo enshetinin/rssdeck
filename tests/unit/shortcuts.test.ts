@@ -21,6 +21,7 @@ describe("shortcutFor", () => {
     ["s", "toggle-star"],
     ["m", "toggle-read"],
     ["o", "open-original"],
+    ["/", "focus-search"],
     ["?", "show-help"],
   ])("maps %s to %s", (key, action) => {
     expect(shortcutFor(press(key))).toBe(action);
