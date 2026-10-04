@@ -9,7 +9,6 @@ describe("describeFeedStatus", () => {
   const base = {
     lastSucceededAt: null,
     lastError: null,
-    nextFetchAt: now.toISOString(),
     consecutiveFailureCount: 0,
   };
 
@@ -30,12 +29,11 @@ describe("describeFeedStatus", () => {
         {
           lastSucceededAt: "2026-09-30T12:00:00Z",
           lastError: "HTTP 404.",
-          nextFetchAt: "2026-10-01T14:00:00Z",
           consecutiveFailureCount: 2,
         },
         now,
       ),
-    ).toEqual({ kind: "failing", error: "HTTP 404.", retry: "in 2 hours" });
+    ).toEqual({ kind: "failing", error: "HTTP 404." });
   });
 });
 

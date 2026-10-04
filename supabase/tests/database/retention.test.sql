@@ -1,16 +1,18 @@
--- Entry retention (prune_entries). Run with `npm run test:db`.
+-- Entry retention (prune_own_entries). Run with `npm run test:db`.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(12);
 
 insert into auth.users (id, aud, role, email) values
-  ('aaaaaaaa-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'alice@example.test');
+  ('aaaaaaaa-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'alice@example.test'),
+  ('bbbbbbbb-0000-4000-8000-000000000002', 'authenticated', 'authenticated', 'bob@example.test');
 
 -- One feed fetched in full just now; one never fetched in full.
 insert into public.feeds (id, user_id, feed_url, last_parsed_at) values
   ('aaaaaaaa-1111-4000-8000-000000000001', 'aaaaaaaa-0000-4000-8000-000000000001', 'https://a.example.test/feed', now()),
-  ('aaaaaaaa-1111-4000-8000-000000000002', 'aaaaaaaa-0000-4000-8000-000000000001', 'https://b.example.test/feed', null);
+  ('aaaaaaaa-1111-4000-8000-000000000002', 'aaaaaaaa-0000-4000-8000-000000000001', 'https://b.example.test/feed', null),
+  ('bbbbbbbb-1111-4000-8000-000000000001', 'bbbbbbbb-0000-4000-8000-000000000002', 'https://bob.example.test/feed', now());
 
 -- "gone" entries were last seen before the last full fetch; "present" ones in it.
 insert into public.entries (id, feed_id, external_id, created_at, last_seen_at) values
@@ -20,7 +22,8 @@ insert into public.entries (id, feed_id, external_id, created_at, last_seen_at) 
   ('00000000-0000-4000-8000-000000000004', 'aaaaaaaa-1111-4000-8000-000000000001', 'gone-starred-400d',  now() - interval '400 days', now() - interval '1 day'),
   ('00000000-0000-4000-8000-000000000005', 'aaaaaaaa-1111-4000-8000-000000000001', 'gone-unread-60d',    now() - interval '60 days',  now() - interval '1 day'),
   ('00000000-0000-4000-8000-000000000006', 'aaaaaaaa-1111-4000-8000-000000000001', 'gone-unread-100d',   now() - interval '100 days', now() - interval '1 day'),
-  ('00000000-0000-4000-8000-000000000007', 'aaaaaaaa-1111-4000-8000-000000000002', 'never-parsed-400d',  now() - interval '400 days', now() - interval '300 days');
+  ('00000000-0000-4000-8000-000000000007', 'aaaaaaaa-1111-4000-8000-000000000002', 'never-parsed-400d',  now() - interval '400 days', now() - interval '300 days'),
+  ('00000000-0000-4000-8000-000000000008', 'bbbbbbbb-1111-4000-8000-000000000001', 'bob-gone-unread-100d', now() - interval '100 days', now() - interval '1 day');
 
 insert into public.entry_states (user_id, entry_id, read_at, starred_at) values
   ('aaaaaaaa-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001', now(), null),
@@ -28,16 +31,15 @@ insert into public.entry_states (user_id, entry_id, read_at, starred_at) values
   ('aaaaaaaa-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000003', now(), null),
   ('aaaaaaaa-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000004', now(), now());
 
--- Users cannot prune -----------------------------------------------------------
+-- Pruning, as Alice -----------------------------------------------------------
+
+set local role anon;
+select throws_ok('select public.prune_own_entries(30, 90)', '42501', null, 'anon cannot prune');
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub": "aaaaaaaa-0000-4000-8000-000000000001", "role": "authenticated"}', true);
-select throws_ok('select public.prune_entries(30, 90)', '42501', null, 'Users cannot call prune_entries');
-reset role;
 
--- Pruning ----------------------------------------------------------------------
-
-select is(public.prune_entries(30, 90), 2, 'Two entries are pruned');
+select is(public.prune_own_entries(30, 90), 2, 'Two entries are pruned');
 
 select ok(not exists (select 1 from public.entries where external_id = 'gone-read-40d'),
   'A read entry that left the feed 30+ days after being seen is pruned');
@@ -54,7 +56,11 @@ select ok(exists (select 1 from public.entries where external_id = 'gone-unread-
 select ok(exists (select 1 from public.entries where external_id = 'never-parsed-400d'),
   'Entries of a feed never fetched in full are kept');
 
-select is(public.prune_entries(30, 90), 0, 'Pruning again changes nothing');
+select is(public.prune_own_entries(30, 90), 0, 'Pruning again changes nothing');
+
+reset role;
+select ok(exists (select 1 from public.entries where external_id = 'bob-gone-unread-100d'),
+  'Alice''s pruning never touches Bob''s entries');
 
 -- Bookkeeping ------------------------------------------------------------------
 

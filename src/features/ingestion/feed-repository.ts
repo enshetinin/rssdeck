@@ -3,34 +3,32 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { NormalizedEntry } from "@/lib/rss/types";
 import type { Database, TablesInsert, TablesUpdate } from "@/types/database";
 
-import type { DueFeed, FeedRepository } from "./types";
+import type { FeedRepository, IngestionFeed } from "./types";
 
 const UPSERT_BATCH_SIZE = 100;
 
 /**
- * Supabase-backed persistence for ingestion. Needs a client that may write
- * entries and bookkeeping columns, i.e. the service-role client.
+ * Supabase-backed persistence for ingestion, acting as the signed-in user.
+ * Users cannot write entries or bookkeeping columns directly; the writes go
+ * through SECURITY DEFINER functions limited to the caller's own feeds.
  */
 export function createFeedRepository(supabase: SupabaseClient<Database>): FeedRepository {
   return {
-    async listDueFeeds(now, limit) {
+    async listFeeds(limit) {
+      // RLS limits the rows to the caller's feeds.
       const { data, error } = await supabase
         .from("feeds")
-        .select(
-          "id, feed_url, title, etag, last_modified, refresh_interval_minutes, consecutive_failure_count",
-        )
-        .lte("next_fetch_at", now.toISOString())
-        .order("next_fetch_at")
+        .select("id, feed_url, title, etag, last_modified, consecutive_failure_count")
+        .order("last_fetched_at", { ascending: true, nullsFirst: true })
         .limit(limit);
 
-      if (error) throw new Error(`Loading due feeds failed: ${error.message}`);
+      if (error) throw new Error(`Loading feeds failed: ${error.message}`);
 
-      return data.map((row): DueFeed => ({
+      return data.map((row): IngestionFeed => ({
         id: row.id,
         feedUrl: row.feed_url,
         title: row.title,
         validators: { etag: row.etag, lastModified: row.last_modified },
-        refreshIntervalMinutes: row.refresh_interval_minutes,
         consecutiveFailureCount: row.consecutive_failure_count,
       }));
     },
@@ -41,14 +39,15 @@ export function createFeedRepository(supabase: SupabaseClient<Database>): FeedRe
           .slice(start, start + UPSERT_BATCH_SIZE)
           .map((entry) => toEntryRow(feedId, entry, seenAt));
         // Idempotent: re-ingesting the same entries updates them in place.
-        const { error } = await supabase
-          .from("entries")
-          .upsert(rows, { onConflict: "feed_id,external_id" });
+        const { error } = await supabase.rpc("save_own_feed_entries", {
+          p_feed_id: feedId,
+          p_entries: rows,
+        });
         if (error) throw new Error(`Saving entries failed: ${error.message}`);
       }
     },
 
-    async recordSuccess(feed, { now, nextFetchAt, validators, metadata }) {
+    async recordSuccess(feed, { now, validators, metadata }) {
       const update: TablesUpdate<"feeds"> = {
         etag: validators.etag,
         last_modified: validators.lastModified,
@@ -56,7 +55,6 @@ export function createFeedRepository(supabase: SupabaseClient<Database>): FeedRe
         last_succeeded_at: now.toISOString(),
         last_error: null,
         consecutive_failure_count: 0,
-        next_fetch_at: nextFetchAt.toISOString(),
       };
       if (metadata) {
         // A full fetch: entries not upserted just now have left the feed.
@@ -73,7 +71,7 @@ export function createFeedRepository(supabase: SupabaseClient<Database>): FeedRe
     },
 
     async pruneEntries({ readDays, unreadDays }) {
-      const { data, error } = await supabase.rpc("prune_entries", {
+      const { data, error } = await supabase.rpc("prune_own_entries", {
         p_read_days: readDays,
         p_unread_days: unreadDays,
       });
@@ -81,18 +79,20 @@ export function createFeedRepository(supabase: SupabaseClient<Database>): FeedRe
       return data;
     },
 
-    async recordFailure(feed, { now, nextFetchAt, message }) {
+    async recordFailure(feed, { now, message }) {
       await updateFeed(feed.id, {
         last_fetched_at: now.toISOString(),
         last_error: message,
         consecutive_failure_count: feed.consecutiveFailureCount + 1,
-        next_fetch_at: nextFetchAt.toISOString(),
       });
     },
   };
 
   async function updateFeed(feedId: string, update: TablesUpdate<"feeds">) {
-    const { error } = await supabase.from("feeds").update(update).eq("id", feedId);
+    const { error } = await supabase.rpc("update_own_feed_state", {
+      p_feed_id: feedId,
+      p_state: update,
+    });
     if (error) throw new Error(`Updating feed failed: ${error.message}`);
   }
 }

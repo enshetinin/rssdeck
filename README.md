@@ -2,13 +2,13 @@
 
 A private, self-hostable RSS/Atom dashboard built with Next.js, Supabase and Render.
 
-> Status: usable. Sign-in, a three-column reader, feed management and scheduled ingestion work.
+> Status: usable. Sign-in, a three-column reader, feed management and on-demand feed refresh work.
 
 ## Stack
 
 - Next.js (App Router), React, TypeScript (strict)
 - Supabase: PostgreSQL, Auth, Row Level Security
-- Render: web service and a cron job for feed ingestion
+- Render: web service
 - npm, ESLint, Prettier, Vitest, Playwright, pgTAP
 
 ## Local development
@@ -25,11 +25,11 @@ npm run dev                   # http://localhost:3000
 
 `.env.local` values from `npm run supabase:status`:
 
-| Variable                               | Status output                          |
-| -------------------------------------- | -------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`             | API URL                                |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key                        |
-| `SUPABASE_SERVICE_ROLE_KEY`            | Secret key (only for `npm run ingest`) |
+| Variable                               | Status output                           |
+| -------------------------------------- | --------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | API URL                                 |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key                         |
+| `SUPABASE_SERVICE_ROLE_KEY`            | Secret key (only for e2e test fixtures) |
 
 The local seed creates a fictional user, `dev@example.com` / `rssdeck-local-dev`, with one sample feed. Sign in at http://localhost:3000/login.
 
@@ -49,7 +49,6 @@ In production, create users in the Supabase dashboard (Authentication → Users 
 | `npm run db:migration:new -- <name>` | Create a new migration                                   |
 | `npm run db:reset`                   | Rebuild the local database from migrations and seed      |
 | `npm run db:types`                   | Regenerate `src/types/database.ts` from the local schema |
-| `npm run ingest`                     | Run the ingestion job against the configured Supabase    |
 | `npm run secrets:scan`               | Scan git history for secrets with gitleaks (Docker)      |
 
 First-time Playwright setup: `npx playwright install chromium`.
@@ -59,11 +58,11 @@ First-time Playwright setup: `npx playwright install chromium`.
 The schema lives exclusively in `supabase/migrations/`. Every change is a new migration, followed by `npm run db:types`.
 
 - `feeds`: a user's subscriptions, with HTTP cache validators, fetch scheduling and failure backoff.
-- `entries`: items ingested from feeds, unique per `(feed_id, external_id)`; written only by the ingestion job.
+- `entries`: items ingested from feeds, unique per `(feed_id, external_id)`; written only through `save_own_feed_entries()`, for the caller's own feeds.
 - `entry_states`: per-user read and starred timestamps.
 - `entry_list` (view, `security_invoker`): entries joined with the caller's own state; `entry_counts()`, `set_entry_state()` and `mark_entries_read()` run as the caller, so RLS applies.
 
-RLS limits every authenticated user to their own feeds, the entries of those feeds, and their own entry state. Column-level grants stop users from editing ingestion bookkeeping (ETag, schedule, errors). `anon` has no access.
+RLS limits every authenticated user to their own feeds, the entries of those feeds, and their own entry state. Column-level grants stop users from writing entries or ingestion bookkeeping (ETag, errors) directly; the refresh writes them through `SECURITY DEFINER` functions limited to the caller's own feeds. `anon` has no access.
 
 ## Reading
 
@@ -79,23 +78,21 @@ Keyboard shortcuts: `j` / `k` next and previous entry, `s` star, `m` read/unread
 
 ## Feeds
 
-At `/feeds` ("Manage feeds") a user adds a feed by its address or by a website address (the page's `<link rel="alternate">` feeds are discovered; everything is fetched through the same network guard as ingestion), sees each feed's last refresh or error and refresh interval, renames a feed or changes how often it is refreshed, and removes feeds after confirming. New feeds get their entries on the next ingestion run.
+At `/feeds` ("Manage feeds") a user adds a feed by its address or by a website address (the page's `<link rel="alternate">` feeds are discovered; everything is fetched through the same network guard as ingestion), sees each feed's last refresh or error, renames a feed, and removes feeds after confirming. New feeds get their entries on the next refresh.
 
-Subscriptions can be imported from and exported to OPML, the format other readers use. Imports are capped at 500 feeds and 512 KB, folders are flattened, and imported feeds are not fetched on the spot: ingestion checks them and reports broken ones.
+Subscriptions can be imported from and exported to OPML, the format other readers use. Imports are capped at 500 feeds and 512 KB, folders are flattened, and imported feeds are not fetched on the spot: the next refresh checks them and reports broken ones.
 
-## Feed ingestion
+## Feed refresh
 
-`npm run ingest` processes every feed whose `next_fetch_at` has passed:
+There is no scheduled job. **Refresh**, at the top of the sidebar, fetches all of the signed-in user's feeds (up to 500 per press, least recently fetched first, six at a time) as that user:
 
 1. Fetch with a 15 s timeout, a 5 MB limit, `If-None-Match` / `If-Modified-Since`, and redirects followed manually (max 5).
 2. Refuse hosts that resolve to private, loopback or link-local addresses, so feed URLs cannot reach internal services.
 3. Parse RSS 2.0, RSS 1.0 or Atom into `src/lib/rss/types.ts`, keeping only http(s) links.
 4. Upsert entries on `(feed_id, external_id)`, so re-running is idempotent.
-5. Schedule the next fetch: the refresh interval on success, exponential backoff (max 24 h) on failure.
+5. Prune old entries that have left their feeds: read ones 30 days and unread ones 90 days after they were first seen. Starred entries are never pruned, and an entry still in the feed is never pruned (it would come back as new on the next fetch). The policy lives in `src/features/ingestion/retention.ts`.
 
-6. Prune old entries that have left their feeds: read ones 30 days and unread ones 90 days after they were first seen. Starred entries are never pruned, and an entry still in the feed is never pruned (it would come back as new on the next fetch). The policy lives in `src/features/ingestion/retention.ts`.
-
-A broken feed records a short `last_error` (never its URL, which may contain tokens) and never stops the run. Feed HTML is stored as received; it must be sanitized before rendering.
+A broken feed records a short `last_error` (never its URL, which may contain tokens) and never stops the others; it is tried again on the next refresh. Feed HTML is stored as received; it must be sanitized before rendering.
 
 ## Project structure
 
@@ -110,14 +107,13 @@ src/
   styles/yev/       vendored yev-design foundations (do not edit)
   types/            generated database types
   proxy.ts          session refresh
-scripts/            background jobs (feed ingestion)
 supabase/           config, migrations, seed, pgTAP tests
 tests/              unit and end-to-end tests
 ```
 
 ## Deployment
 
-Supabase (database and auth) plus Render (web service and ingestion cron), described in `render.yaml`. Step-by-step guide: [docs/deployment.md](docs/deployment.md).
+Supabase (database and auth) plus Render (web service), described in `render.yaml`. Step-by-step guide: [docs/deployment.md](docs/deployment.md).
 
 ## Security
 

@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { CloseIcon, MenuIcon } from "yev-icons";
 
 import { signOut } from "@/features/auth/actions";
+import { RefreshFeedsButton } from "@/features/feeds/refresh-feeds-button";
 import { KeyboardShortcuts } from "@/features/shortcuts/keyboard-shortcuts";
 import { ThemeChoice } from "@/features/theme/theme-choice";
 import type { ThemePreference } from "@/features/theme/theme";
@@ -68,6 +69,7 @@ export function AppSidebar({
         <Link href="/" className="shell-wordmark">
           RSSDeck
         </Link>
+        <RefreshFeedsButton />
         <button
           type="button"
           className="yev-button yev-button-outline app-sidebar-toggle"

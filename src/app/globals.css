@@ -161,12 +161,33 @@ body {
 
 /* Sidebar ---------------------------------------------------------------------- */
 
+/* Wordmark, then Refresh (and Menu on narrow screens) at the end; the refresh
+   result wraps onto its own line below, so it stays visible at every width. */
 .app-sidebar-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--yev-space-4);
+  gap: var(--yev-space-2) var(--yev-space-4);
   padding: var(--yev-space-3) var(--pane-pad);
+}
+
+.app-sidebar-bar .shell-wordmark {
+  margin-inline-end: auto;
+}
+
+.refresh-feeds {
+  display: contents;
+}
+
+.refresh-feeds-status {
+  order: 1;
+  flex-basis: 100%;
+  color: var(--yev-muted);
+  font-size: var(--yev-text-meta);
+}
+
+.refresh-feeds-status:empty {
+  display: none;
 }
 
 .app-sidebar-content {

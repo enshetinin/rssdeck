@@ -13,7 +13,7 @@ The repository is public. Treat all code, configuration, commit history, logs, f
 - Supabase Auth
 - Supabase Row Level Security
 - Supabase CLI for local development
-- Render for production hosting and scheduled RSS ingestion
+- Render for production hosting
 - npm as package manager
 - ESLint + Prettier, Vitest (unit), Playwright (end-to-end), pgTAP (database/RLS)
 
@@ -70,7 +70,6 @@ Keep responsibilities separated.
 - `src/lib/supabase/`: Supabase clients and database integration.
 - `src/types/database.ts`: generated Supabase types. Never edit by hand.
 - `src/proxy.ts`: Next.js proxy (formerly middleware) that refreshes the Supabase session.
-- `scripts/`: executable background/maintenance processes.
 - `supabase/`: database schema, migrations, seed data, pgTAP tests and local Supabase configuration.
 - `tests/unit/`, `tests/e2e/`: Vitest and Playwright tests.
 
@@ -110,9 +109,9 @@ Authenticated application requests use the user's Supabase session.
 
 There is no public sign-up. `src/proxy.ts` redirects signed-out requests to `/login`, and every page and Server Action must still check the session itself (`requireUser()` in `src/features/auth/session.ts`). Post-login redirects go through `safeRedirectPath()`.
 
-Server-side privileged operations may use the Supabase service role only where required.
+The app does not use the Supabase service role. Do not reintroduce it without a concrete need for acting across users; it bypasses RLS.
 
-The service-role credential must never be exposed to client-side code.
+The service-role credential must never be exposed to client-side code. It is only used locally by the e2e test fixtures.
 
 ## Security
 
@@ -170,11 +169,8 @@ Maintain explicit separation between:
 
 - browser client: `src/lib/supabase/client.ts`
 - authenticated server client: `src/lib/supabase/server.ts`
-- privileged service-role client: `src/lib/supabase/admin.ts` (bypasses RLS)
 
-`admin.ts` imports `server-only`, so importing it from a Client Component fails the build. ESLint also forbids importing it from `src/app`, `src/components`, `src/features` and `src/proxy.ts`. Do not work around either guard.
-
-Use the service-role client only for jobs that genuinely act across users (feed ingestion in `scripts/`). Serve user requests with the server client so RLS applies.
+Serve user requests with the server client so RLS applies. Where users need a write they are not granted directly (entries, ingestion bookkeeping), add a narrow `SECURITY DEFINER` function that checks ownership via `auth.uid()`, with pgTAP tests.
 
 ## TypeScript
 
@@ -202,11 +198,11 @@ Fetching must:
 - respect HTTP caching via ETag and Last-Modified where available
 - avoid duplicate entries
 - record useful failure information without leaking secrets
-- avoid one broken feed aborting the entire refresh job
+- avoid one broken feed aborting the entire refresh
 
 Normalize feed formats into the internal domain types in `src/lib/rss/types.ts` before persistence.
 
-Ingestion runs as `npm run ingest` (`scripts/ingest-feeds.ts`), scheduled by a Render cron job with server-only credentials. Fetching, parsing and the network guard live in `src/lib/rss/`; orchestration, scheduling and persistence in `src/features/ingestion/`. Error messages stored in `feeds.last_error` or logged must never contain feed URLs or response bodies.
+There is no scheduled job: the Refresh button (`refreshFeeds()` in `src/features/feeds/actions.ts`) ingests the signed-in user's feeds as that user, writing through `save_own_feed_entries()`, `update_own_feed_state()` and `prune_own_entries()`. Fetching, parsing and the network guard live in `src/lib/rss/`; orchestration and persistence in `src/features/ingestion/`. Error messages stored in `feeds.last_error` or logged must never contain feed URLs or response bodies.
 
 Ingestion operations must be idempotent.
 
@@ -324,3 +320,13 @@ A change is complete when:
 - database changes are represented as migrations/schema
 - UI changes comply with yev-design
 - relevant documentation is updated
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

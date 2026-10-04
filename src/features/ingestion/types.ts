@@ -1,11 +1,11 @@
 import type { CacheValidators, NormalizedEntry, NormalizedFeed } from "@/lib/rss/types";
 
-export type DueFeed = {
+/** A feed as ingestion sees it. */
+export type IngestionFeed = {
   id: string;
   feedUrl: string;
   title: string | null;
   validators: CacheValidators;
-  refreshIntervalMinutes: number;
   consecutiveFailureCount: number;
 };
 
@@ -16,14 +16,14 @@ export type FeedMetadata = Omit<NormalizedFeed, "entries"> & {
 
 /** Persistence operations ingestion needs. Implemented over Supabase in feed-repository.ts. */
 export type FeedRepository = {
-  listDueFeeds(now: Date, limit: number): Promise<DueFeed[]>;
+  /** Least recently fetched first, so a capped run still reaches every feed over time. */
+  listFeeds(limit: number): Promise<IngestionFeed[]>;
   /** Upserts entries and records them as present in the feed at `seenAt`. */
   saveEntries(feedId: string, entries: NormalizedEntry[], seenAt: Date): Promise<void>;
   recordSuccess(
-    feed: DueFeed,
+    feed: IngestionFeed,
     result: {
       now: Date;
-      nextFetchAt: Date;
       validators: CacheValidators;
       /** Null when the feed was not modified. */
       metadata: FeedMetadata | null;
@@ -31,10 +31,7 @@ export type FeedRepository = {
   ): Promise<void>;
   /** Deletes old entries that have left their feeds; returns how many. */
   pruneEntries(policy: RetentionPolicy): Promise<number>;
-  recordFailure(
-    feed: DueFeed,
-    result: { now: Date; nextFetchAt: Date; message: string },
-  ): Promise<void>;
+  recordFailure(feed: IngestionFeed, result: { now: Date; message: string }): Promise<void>;
 };
 
 export type RetentionPolicy = {

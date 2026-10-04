@@ -3,7 +3,10 @@
 # Blueprint is first created. Never put real values in this file.
 #
 # Node.js version comes from .nvmrc. devDependencies are needed at build time
-# (TypeScript) and by the ingestion job (tsx), hence --include=dev.
+# (TypeScript), hence --include=dev.
+#
+# There is no cron job: feeds are refreshed from the app with its Refresh
+# button, as the signed-in user. The web service never gets the secret key.
 
 services:
   - type: web
@@ -25,22 +28,3 @@ services:
         sync: false
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
-
-  - type: cron
-    name: rssdeck-ingest
-    runtime: node
-    # Cron jobs have no free plan; omitting `plan` selects the smallest one.
-    region: frankfurt
-    # Hourly. Billing is per second with a $1/month minimum, so frequency
-    # barely changes the cost; ingestion also takes feeds due within the next
-    # few minutes, so 60-minute feeds do not skip a run.
-    schedule: "0 * * * *"
-    buildCommand: npm ci --include=dev
-    startCommand: npm run ingest
-    autoDeployTrigger: checksPass
-    envVars:
-      - key: NEXT_PUBLIC_SUPABASE_URL
-        sync: false
-      # Bypasses RLS. Only this job gets it; the web service never does.
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false

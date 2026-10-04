@@ -14,24 +14,6 @@ export default defineConfig([
       "no-console": ["warn", { allow: ["warn", "error", "info"] }],
     },
   },
-  {
-    // Request-serving code must act as the signed-in user under RLS.
-    files: ["src/app/**", "src/components/**", "src/features/**", "src/proxy.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              name: "@/lib/supabase/admin",
-              message:
-                "The service-role client bypasses RLS. Use @/lib/supabase/server or @/lib/supabase/client.",
-            },
-          ],
-        },
-      ],
-    },
-  },
   globalIgnores([
     ".next/**",
     "out/**",

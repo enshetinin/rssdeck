@@ -3,13 +3,18 @@
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/features/auth/session";
+import { createFeedRepository } from "@/features/ingestion/feed-repository";
+import { describeRefresh } from "@/features/ingestion/refresh-summary";
+import { RETENTION_POLICY } from "@/features/ingestion/retention";
+import { runIngestion } from "@/features/ingestion/run-ingestion";
 import { OpmlParseError, parseOpml } from "@/lib/opml/parse-opml";
 import { FeedFetchError, FeedParseError } from "@/lib/rss/errors";
+import { fetchFeed } from "@/lib/rss/fetch";
+import { parseFeed } from "@/lib/rss/parse";
 import { createClient } from "@/lib/supabase/server";
 
 import { normalizeFeedUrl } from "./feed-url";
 import { prepareImport } from "./prepare-import";
-import { isRefreshInterval } from "./refresh-intervals";
 import { FeedNotFoundError, resolveFeed } from "./resolve-feed";
 
 export type AddFeedState =
@@ -23,7 +28,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * Subscribes the signed-in user to a feed. The address may be the feed itself
  * or a web page that links to one. It is fetched once first, so a typo or a
  * page without a feed is reported now rather than as a failing subscription
- * later. Entries arrive with the next ingestion run.
+ * later. Entries arrive with the next refresh.
  */
 export async function addFeed(_previous: AddFeedState, formData: FormData): Promise<AddFeedState> {
   await requireUser();
@@ -91,8 +96,8 @@ const MAX_OPML_BYTES = 512 * 1024;
 
 /**
  * Subscribes to every feed in an OPML file. Feeds are not fetched here (an
- * import can hold hundreds); ingestion checks them and reports broken ones
- * under Manage feeds.
+ * import can hold hundreds); the next refresh checks them and reports broken
+ * ones under Manage feeds.
  */
 export async function importFeeds(
   _previous: ImportFeedsState,
@@ -149,8 +154,8 @@ export type UpdateFeedState =
 const MAX_TITLE_LENGTH = 1000;
 
 /**
- * Renames a feed and/or changes how often it is refreshed. An empty title
- * goes back to the feed's own title, filled in by the next full refresh.
+ * Renames a feed. An empty title goes back to the feed's own title, filled in
+ * by the next full refresh.
  */
 export async function updateFeed(
   _previous: UpdateFeedState,
@@ -160,7 +165,6 @@ export async function updateFeed(
 
   const feedId = String(formData.get("feedId") ?? "");
   const title = String(formData.get("title") ?? "").trim();
-  const interval = Number(formData.get("refreshInterval"));
 
   if (!UUID_PATTERN.test(feedId)) {
     return { status: "error", error: "This feed no longer exists.", title };
@@ -168,14 +172,11 @@ export async function updateFeed(
   if (title.length > MAX_TITLE_LENGTH) {
     return { status: "error", error: "Use a title of at most 1000 characters.", title };
   }
-  if (!isRefreshInterval(interval)) {
-    return { status: "error", error: "Choose one of the refresh options.", title };
-  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("feeds")
-    .update({ title: title || null, refresh_interval_minutes: interval })
+    .update({ title: title || null })
     .eq("id", feedId)
     .select("id");
 
@@ -209,4 +210,38 @@ export async function removeFeed(
 
   revalidatePath("/", "layout");
   return { status: "removed" };
+}
+
+export type RefreshFeedsState =
+  | { status: "idle" }
+  | { status: "error"; error: string }
+  | { status: "refreshed"; message: string; failed: number };
+
+/**
+ * Fetches all of the signed-in user's feeds now, then prunes old entries.
+ * Runs as the user: writes go through database functions limited to their
+ * own feeds. One broken feed is recorded on that feed and never stops the rest.
+ */
+export async function refreshFeeds(): Promise<RefreshFeedsState> {
+  await requireUser();
+
+  const repository = createFeedRepository(await createClient());
+  try {
+    const summary = await runIngestion({
+      repository,
+      fetchFeed: (url, validators) => fetchFeed(url, validators),
+      parseFeed,
+      concurrency: 6,
+    });
+    // After fetching, so it sees what every feed contains right now.
+    await repository.pruneEntries(RETENTION_POLICY);
+
+    revalidatePath("/", "layout");
+    return { status: "refreshed", message: describeRefresh(summary), failed: summary.failed };
+  } catch (error) {
+    // Only the run itself failing (e.g. the database is unreachable) gets here.
+    console.error("Refreshing feeds failed:", error instanceof Error ? error.message : error);
+    revalidatePath("/", "layout");
+    return { status: "error", error: "Refreshing failed. Try again in a moment." };
+  }
 }

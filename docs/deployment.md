@@ -3,16 +3,17 @@
 RSSDeck runs on two hosted pieces:
 
 - **Supabase**: PostgreSQL, Auth and the Data API.
-- **Render**: the Next.js web service and a cron job that ingests feeds.
+- **Render**: the Next.js web service.
 
 ```
 Browser ──▶ Render web (Next.js) ──▶ Supabase (Auth, Data API, RLS)
-Render cron (npm run ingest) ──────▶ Supabase (service role) ──▶ feeds on the web
+                    └─ Refresh ─────▶ feeds on the web
 ```
 
 The web service only ever holds the public URL and publishable key; every
-request runs as the signed-in user under RLS. Only the cron job holds the
-service-role key.
+request runs as the signed-in user under RLS. Feeds are refreshed when you
+press **Refresh** in the app, as you: there is no scheduled job and the
+service-role key is not used in production.
 
 ## 1. Supabase project
 
@@ -50,37 +51,38 @@ service-role key.
    connect the GitHub repository, and select `render.yaml`.
 3. Render asks for the `sync: false` values:
 
-   | Service          | Variable                               | Value                |
-   | ---------------- | -------------------------------------- | -------------------- |
-   | `rssdeck`        | `NEXT_PUBLIC_SUPABASE_URL`             | Supabase Project URL |
-   | `rssdeck`        | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key      |
-   | `rssdeck-ingest` | `NEXT_PUBLIC_SUPABASE_URL`             | Supabase Project URL |
-   | `rssdeck-ingest` | `SUPABASE_SERVICE_ROLE_KEY`            | Secret key           |
+   | Service   | Variable                               | Value                |
+   | --------- | -------------------------------------- | -------------------- |
+   | `rssdeck` | `NEXT_PUBLIC_SUPABASE_URL`             | Supabase Project URL |
+   | `rssdeck` | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key      |
 
    Render only prompts for these on the first Blueprint sync. To change them
    later, edit the service's **Environment** page.
 
-4. Wait for both services to build. Note the web service URL and finish
+4. Wait for the service to build. Note the web service URL and finish
    Supabase step 1.5.
 5. Open the URL, sign in with the user from Supabase step 1.4, and add feeds
-   under **Manage feeds**. Entries appear after the next cron run (at most an
-   hour), or trigger one with **Trigger Run** on the `rssdeck-ingest` job.
+   under **Manage feeds**. Press **Refresh** (top of the sidebar) to fetch
+   their entries.
+
+   Upgrading from a version with the `rssdeck-ingest` cron job: delete that
+   job in the Render Dashboard after syncing the Blueprint, so it stops
+   running and billing.
 
 ## Costs and limits
 
 - **Web service, free plan**: sleeps after a period without traffic; the first
   request afterwards takes a while to wake it. A paid plan avoids that.
-- **Cron job**: Render has no free plan for cron jobs. It is billed per second
-  of running time with a minimum of $1 per month; at seconds per hourly run,
-  the minimum is what you pay. **Billing** in the Render Dashboard shows the
-  month so far, and the job's page lists each run with its duration.
+- **Refresh**: runs inside the web request, fetching up to 500 feeds (least
+  recently fetched first), six at a time with a 15 s timeout each. With many
+  feeds it can take a minute or two.
 - **Supabase free plan**: projects with no activity for a while are paused.
-  Ingestion talks to the database every hour, which normally keeps it
-  active; check the Supabase dashboard if the app stops loading.
+  Nothing talks to the database unless you use the app; if it stops loading,
+  restore the project from the Supabase dashboard.
 
 ## Releasing changes
 
-- Pushing to `main` runs CI; Render deploys both services only after the
+- Pushing to `main` runs CI; Render deploys the service only after the
   checks pass (`autoDeployTrigger: checksPass`).
 - **Schema changes are not applied automatically.** When a commit adds a
   migration, run `npx supabase db push` before (or right as) that commit
@@ -91,9 +93,9 @@ service-role key.
 
 ## Troubleshooting
 
-| Symptom                                           | Check                                                                                                       |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Build fails with a missing Supabase variable      | Both `NEXT_PUBLIC_` variables are set on the web service (they are read at build time).                     |
-| Sign-in always says the password is wrong         | The user exists and is confirmed in Supabase **Authentication → Users**.                                    |
-| Feeds never get entries                           | `rssdeck-ingest` logs; its URL and secret key; the feed's error under **Manage feeds**.                     |
-| Ingestion logs `permission denied` or a JWT error | `SUPABASE_SERVICE_ROLE_KEY` holds the secret key (`sb_secret_…`), not the publishable key or a placeholder. |
+| Symptom                                      | Check                                                                                   |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Build fails with a missing Supabase variable | Both `NEXT_PUBLIC_` variables are set on the web service (they are read at build time). |
+| Sign-in always says the password is wrong    | The user exists and is confirmed in Supabase **Authentication → Users**.                |
+| Feeds never get entries                      | The feed's error under **Manage feeds** after a **Refresh**; the web service logs.      |
+| Refresh says "Refreshing failed"             | The web service logs; every migration is applied (`npx supabase db push`).              |

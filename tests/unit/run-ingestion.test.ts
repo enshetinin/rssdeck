@@ -1,20 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { runIngestion } from "@/features/ingestion/run-ingestion";
-import type { DueFeed, FeedRepository } from "@/features/ingestion/types";
+import type { FeedRepository, IngestionFeed } from "@/features/ingestion/types";
 import { FeedFetchError } from "@/lib/rss/errors";
 import type { FetchFeedResult } from "@/lib/rss/fetch";
 import type { NormalizedFeed } from "@/lib/rss/types";
 
 const now = new Date("2026-10-01T12:00:00Z");
 
-function dueFeed(id: string, overrides: Partial<DueFeed> = {}): DueFeed {
+function feed(id: string, overrides: Partial<IngestionFeed> = {}): IngestionFeed {
   return {
     id,
     feedUrl: `https://feeds.example.test/${id}`,
     title: null,
     validators: { etag: null, lastModified: null },
-    refreshIntervalMinutes: 60,
     consecutiveFailureCount: 0,
     ...overrides,
   };
@@ -38,9 +37,9 @@ const parsed: NormalizedFeed = {
   ],
 };
 
-function fakeRepository(feeds: DueFeed[]) {
+function fakeRepository(feeds: IngestionFeed[]) {
   return {
-    listDueFeeds: vi.fn<FeedRepository["listDueFeeds"]>(async () => feeds),
+    listFeeds: vi.fn<FeedRepository["listFeeds"]>(async () => feeds),
     saveEntries: vi.fn<FeedRepository["saveEntries"]>(async () => {}),
     recordSuccess: vi.fn<FeedRepository["recordSuccess"]>(async () => {}),
     recordFailure: vi.fn<FeedRepository["recordFailure"]>(async () => {}),
@@ -52,7 +51,7 @@ const silentLogger = { info: () => {}, error: () => {} };
 
 describe("runIngestion", () => {
   it("stores entries and metadata for an updated feed", async () => {
-    const repository = fakeRepository([dueFeed("a")]);
+    const repository = fakeRepository([feed("a")]);
     const summary = await runIngestion({
       repository,
       fetchFeed: async () => ({
@@ -70,7 +69,6 @@ describe("runIngestion", () => {
     expect(repository.saveEntries).toHaveBeenCalledWith("a", parsed.entries, now);
     expect(repository.recordSuccess).toHaveBeenCalledWith(expect.objectContaining({ id: "a" }), {
       now,
-      nextFetchAt: new Date("2026-10-01T13:00:00Z"),
       validators: { etag: '"v2"', lastModified: null },
       metadata: {
         title: "Parsed",
@@ -83,7 +81,7 @@ describe("runIngestion", () => {
   });
 
   it("records not-modified feeds without parsing", async () => {
-    const repository = fakeRepository([dueFeed("a")]);
+    const repository = fakeRepository([feed("a")]);
     const parseFeed = vi.fn(() => parsed);
     const summary = await runIngestion({
       repository,
@@ -105,12 +103,12 @@ describe("runIngestion", () => {
     );
   });
 
-  it("keeps going when individual feeds fail, and backs them off", async () => {
+  it("keeps going when individual feeds fail", async () => {
     const repository = fakeRepository([
-      dueFeed("ok-1"),
-      dueFeed("broken", { consecutiveFailureCount: 2 }),
-      dueFeed("crashes"),
-      dueFeed("ok-2"),
+      feed("ok-1"),
+      feed("broken", { consecutiveFailureCount: 2 }),
+      feed("crashes"),
+      feed("ok-2"),
     ]);
     const okResult: FetchFeedResult = {
       status: "ok",
@@ -135,12 +133,7 @@ describe("runIngestion", () => {
     expect(summary).toEqual({ processed: 4, updated: 2, "not-modified": 0, failed: 2 });
     expect(repository.recordFailure).toHaveBeenCalledWith(
       expect.objectContaining({ id: "broken" }),
-      {
-        now,
-        // Third consecutive failure: 60 min * 2^3.
-        nextFetchAt: new Date("2026-10-01T20:00:00Z"),
-        message: "HTTP 500.",
-      },
+      { now, message: "HTTP 500." },
     );
     // Unexpected errors are not stored verbatim.
     expect(repository.recordFailure).toHaveBeenCalledWith(
@@ -150,7 +143,7 @@ describe("runIngestion", () => {
   });
 
   it("counts a feed as failed when saving its entries fails", async () => {
-    const repository = fakeRepository([dueFeed("a")]);
+    const repository = fakeRepository([feed("a")]);
     repository.saveEntries.mockRejectedValueOnce(new Error("Saving entries failed: timeout"));
 
     const summary = await runIngestion({
@@ -172,7 +165,7 @@ describe("runIngestion", () => {
   });
 
   it("survives a failure to record a failure", async () => {
-    const repository = fakeRepository([dueFeed("a"), dueFeed("b")]);
+    const repository = fakeRepository([feed("a"), feed("b")]);
     repository.recordFailure.mockRejectedValue(new Error("db down"));
 
     const summary = await runIngestion({
@@ -188,7 +181,7 @@ describe("runIngestion", () => {
     expect(summary).toEqual({ processed: 2, updated: 0, "not-modified": 0, failed: 2 });
   });
 
-  it("also takes feeds that become due within the next few minutes", async () => {
+  it("handles at most the batch limit of feeds", async () => {
     const repository = fakeRepository([]);
     await runIngestion({
       repository,
@@ -199,6 +192,6 @@ describe("runIngestion", () => {
       now: () => now,
       logger: silentLogger,
     });
-    expect(repository.listDueFeeds).toHaveBeenCalledWith(new Date("2026-10-01T12:05:00Z"), 200);
+    expect(repository.listFeeds).toHaveBeenCalledWith(500);
   });
 });

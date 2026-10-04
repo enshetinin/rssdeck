@@ -29,7 +29,6 @@
     "db:lint": "supabase db lint --level warning",
     "db:migration:new": "supabase migration new",
     "db:types": "supabase gen types typescript --local --schema public > src/types/database.ts && prettier --write src/types/database.ts",
-    "ingest": "tsx --env-file-if-exists=.env.local --conditions=react-server scripts/ingest-feeds.ts",
     "secrets:scan": "docker run --rm -v \"$PWD:/repo\" ghcr.io/gitleaks/gitleaks:v8.28.0 git /repo --config /repo/.gitleaks.toml --redact --verbose"
   },
   "dependencies": {
@@ -55,7 +54,6 @@
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.9",
     "supabase": "^2.119.0",
-    "tsx": "^4.23.15",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.0.3"
   },

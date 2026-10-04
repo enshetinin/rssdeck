@@ -204,11 +204,13 @@ export type Database = {
         }[];
       };
       mark_entries_read: { Args: { p_feed_id?: string }; Returns: number };
-      prune_entries: { Args: { p_read_days: number; p_unread_days: number }; Returns: number };
+      prune_own_entries: { Args: { p_read_days: number; p_unread_days: number }; Returns: number };
+      save_own_feed_entries: { Args: { p_entries: Json; p_feed_id: string }; Returns: undefined };
       set_entry_state: {
         Args: { p_entry_id: string; p_read?: boolean; p_starred?: boolean };
         Returns: undefined;
       };
+      update_own_feed_state: { Args: { p_feed_id: string; p_state: Json }; Returns: undefined };
     };
     Enums: {
       [_ in never]: never;

@@ -2,11 +2,14 @@ import { expect, test } from "@playwright/test";
 
 import { createTestFeed, deleteTestFeed, signIn } from "./fixtures";
 
+// "refreshes every feed on request" rewrites the status of all the dev user's
+// feeds; keep it from racing the status assertions in this file.
+test.describe.configure({ mode: "default" });
+
 test("lists feeds with their status", async ({ page }) => {
   const feed = await createTestFeed({
     last_error: "HTTP 404.",
     consecutive_failure_count: 1,
-    next_fetch_at: new Date(Date.now() + 2 * 3_600_000).toISOString(),
   });
   try {
     await signIn(page, "/feeds");
@@ -65,25 +68,22 @@ test("removes a feed after confirmation", async ({ page }) => {
   }
 });
 
-test("edits a feed's title and refresh interval", async ({ page }) => {
+test("edits a feed's title", async ({ page }) => {
   const feed = await createTestFeed();
   const name = feed.title ?? "";
   try {
     await signIn(page, "/feeds");
     const row = page.getByRole("listitem").filter({ hasText: feed.feed_url });
-    await expect(row).toContainText("Every hour");
 
     await row.getByRole("button", { name: `Edit ${name}` }).click();
     const dialog = page.getByRole("dialog", { name: `Edit ${name}` });
     const title = dialog.getByLabel("Title");
     await expect(title).toBeFocused();
     await title.fill(`${name} renamed`);
-    await dialog.getByLabel("Refresh").selectOption({ label: "Every 6 hours" });
     await dialog.getByRole("button", { name: "Save" }).click();
 
     await expect(dialog).toBeHidden();
     await expect(row).toContainText(`${name} renamed`);
-    await expect(row).toContainText("Every 6 hours");
 
     // An empty title falls back to the address until the feed provides one.
     await row.getByRole("button", { name: `Edit ${name} renamed` }).click();
@@ -96,6 +96,27 @@ test("edits a feed's title and refresh interval", async ({ page }) => {
       .getByRole("button", { name: "Save" })
       .click();
     await expect(row.locator(".feed-name")).toHaveText(new URL(feed.feed_url).hostname);
+  } finally {
+    await deleteTestFeed(feed.id);
+  }
+});
+
+test("refreshes every feed on request", async ({ page }) => {
+  // .test never resolves, so this feed fails and records why.
+  const feed = await createTestFeed();
+  try {
+    await signIn(page, "/");
+    const refresh = page.getByRole("button", { name: "Refresh", exact: true });
+    await refresh.click();
+
+    await expect(
+      page.getByRole("status").filter({ hasText: /Checked \d+ feeds?\./ }),
+    ).toContainText(/\d+ failed\./, { timeout: 30_000 });
+    await expect(refresh).toBeEnabled();
+
+    await page.goto("/feeds");
+    const row = page.getByRole("listitem").filter({ hasText: feed.feed_url });
+    await expect(row).toContainText("Failing: Could not resolve the feed host.");
   } finally {
     await deleteTestFeed(feed.id);
   }
