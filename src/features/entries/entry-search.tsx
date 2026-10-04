@@ -1,6 +1,7 @@
 import Form from "next/form";
 import { SearchIcon } from "yev-icons";
 
+import { MAX_QUERY_LENGTH } from "./search-query";
 import type { ViewParams } from "./view-params";
 
 /**
@@ -23,7 +24,7 @@ export function EntrySearch({ view }: { view: ViewParams }) {
         type="search"
         name="q"
         defaultValue={view.query ?? ""}
-        maxLength={200}
+        maxLength={MAX_QUERY_LENGTH}
         autoComplete="off"
         className="field-control"
         aria-keyshortcuts="/"

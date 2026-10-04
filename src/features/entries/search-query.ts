@@ -2,13 +2,13 @@
 // digits survive, so no tsquery operator from the input ever reaches the
 // database; every word must match, as a prefix ("kube" finds "kubernetes").
 
-const MAX_QUERY_LENGTH = 200;
+export const MAX_QUERY_LENGTH = 200;
 const MAX_TERMS = 8;
 const WORD = /[\p{L}\p{N}]+/gu;
 
 /** The search text as it is kept in the URL and shown back, or null if blank. */
 export function normalizeSearchQuery(value: string | undefined): string | null {
-  const text = value?.replace(/\s+/g, " ").trim().slice(0, MAX_QUERY_LENGTH);
+  const text = value?.replace(/\s+/g, " ").trim().slice(0, MAX_QUERY_LENGTH).trimEnd();
   return text ? text : null;
 }
 

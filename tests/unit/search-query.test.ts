@@ -14,6 +14,10 @@ describe("normalizeSearchQuery", () => {
   it("caps the length", () => {
     expect(normalizeSearchQuery("a".repeat(500))).toHaveLength(200);
   });
+
+  it("does not end in a space when the cap falls on one", () => {
+    expect(normalizeSearchQuery(`${"a".repeat(199)} b`)).toBe("a".repeat(199));
+  });
 });
 
 describe("toPrefixTsQuery", () => {
