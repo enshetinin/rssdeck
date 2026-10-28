@@ -38,7 +38,7 @@
     "next": "^16.3.8",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "sanitize-html": "^2.18.0",
+    "sanitize-html": "^2.18.1",
     "server-only": "^0.0.1",
     "yev-icons": "github:enshetinin/yev-icons#v1.0.0"
   },
